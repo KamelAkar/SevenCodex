@@ -988,14 +988,15 @@ function relatedCollections(store, entry, allRelated) {
 function equipmentSection(store, entry) {
   const rows = entry.fields?.defaultEquipment || [];
   if (!rows.length) return "";
-  return `<section class="page-section"><article class="panel-inner detail-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.category"))}</p><h4>${escapeHtml(t(state.language, "labels.defaultEquipment"))}</h4></div><span class="tag">${formatCount(rows.length)}</span></div><div class="detail-media-list">${rows
+  return `<section class="page-section"><article class="panel-inner detail-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.category"))}</p><h4>${escapeHtml(t(state.language, "labels.defaultEquipment"))}</h4></div><span class="tag">${formatCount(rows.length)}</span></div><div class="character-loadout-grid">${rows
     .map((row) => {
       const linked = store.entryById.get(`item:${row.itemId}`) || null;
       const href = linked ? buildRouteUrl(routeForEntry(state.language, linked)) : "";
       const media = row.icon || linked?.icon || "";
       const type = row.type?.[state.language] || row.type?.en || "";
       const wrapper = href ? "a" : "div";
-      return `<article class="detail-media-row"><${wrapper} class="detail-media-link" ${href ? `href="${href}" data-nav="true"` : ""}><span class="detail-media-thumb">${media ? `<img src="${media}" alt="" loading="lazy" />` : icon("blade")}</span><span class="detail-media-copy"><strong>${escapeHtml(row.name?.[state.language] || row.name?.en || row.itemId)}</strong><span>${escapeHtml(type)}</span></span></${wrapper}></article>`;
+      const summary = linked ? text(linked, "summary") || text(linked, "description") : "";
+      return `<article class="character-loadout-card"><${wrapper} class="character-loadout-link" ${href ? `href="${href}" data-nav="true"` : ""}><span class="detail-media-thumb detail-media-thumb-large">${media ? `<img src="${media}" alt="" loading="lazy" />` : icon("blade")}</span><span class="character-loadout-copy"><p class="eyebrow">${escapeHtml(type || copy("Weapon", "Arme"))}</p><strong>${escapeHtml(row.name?.[state.language] || row.name?.en || row.itemId)}</strong>${summary ? `<span>${escapeHtml(summary)}</span>` : ""}</span></${wrapper}></article>`;
     })
     .join("")}</div></article></section>`;
 }
@@ -1003,10 +1004,10 @@ function equipmentSection(store, entry) {
 function profileSection(entry) {
   const rows = entry.fields?.profile || [];
   if (!rows.length) return "";
-  return `<section class="page-section"><article class="panel-inner detail-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.details"))}</p><h4>${escapeHtml(t(state.language, "labels.profile"))}</h4></div></div><div class="detail-list">${rows
+  return `<section class="page-section"><article class="panel-inner detail-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.details"))}</p><h4>${escapeHtml(t(state.language, "labels.profile"))}</h4></div></div><div class="character-fact-grid character-profile-grid">${rows
     .map(
       (row) =>
-        `<div class="detail-row"><span>${escapeHtml(row.label?.[state.language] || row.label?.en || row.id)}</span><span>${escapeHtml(row.value?.[state.language] || row.value?.en || "")}</span></div>`,
+        characterFactCard(row.label?.[state.language] || row.label?.en || row.id, row.value?.[state.language] || row.value?.en || ""),
     )
     .join("")}</div></article></section>`;
 }
@@ -1014,10 +1015,10 @@ function profileSection(entry) {
 function baseStatsSection(entry) {
   const rows = entry.fields?.baseStats || [];
   if (!rows.length) return "";
-  return `<section class="page-section"><article class="panel-inner detail-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Combat profile", "Profil de combat"))}</p><h4>${escapeHtml(copy("Base stats", "Statistiques de base"))}</h4></div></div><div class="detail-list">${rows
+  return `<section class="page-section"><article class="panel-inner detail-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Combat profile", "Profil de combat"))}</p><h4>${escapeHtml(copy("Base stats", "Statistiques de base"))}</h4></div></div><div class="character-stat-grid">${rows
     .map(
       (row) =>
-        `<div class="detail-row"><span>${escapeHtml(row.label?.[state.language] || row.label?.en || row.id)}</span><span>${escapeHtml(row.value?.[state.language] || row.value?.en || "")}</span></div>`,
+        `<div class="character-stat-card"><span>${escapeHtml(row.label?.[state.language] || row.label?.en || row.id)}</span><strong>${escapeHtml(row.value?.[state.language] || row.value?.en || "")}</strong></div>`,
     )
     .join("")}</div></article></section>`;
 }
@@ -1078,10 +1079,10 @@ function masteryNodeCard(store, node) {
   return `<article class="mastery-node"><div class="mastery-node-head"><div class="detail-media-thumb">${node.icon ? `<img src="${node.icon}" alt="" loading="lazy" />` : icon("star")}</div><div class="style-copy"><p class="eyebrow">${escapeHtml(label)}</p><h4>${escapeHtml(title)}</h4>${condition ? `<div class="detail-chip-row"><span class="tag">${escapeHtml(condition)}</span>${node.grade ? `<span class="tag">${escapeHtml(`G${node.grade}`)}</span>` : ""}</div>` : ""}</div></div>${description ? `<p class="skill-card-text">${escapeHtmlWithBreaks(description)}</p>` : ""}${node.abilities?.length ? `<div class="mastery-bonus-list">${node.abilities.map((bonus) => masteryBonusRow(bonus)).join("")}</div>` : ""}${node.materials?.length ? `<div class="detail-media-list mastery-material-list">${node.materials.map((row) => masteryMaterialRow(store, row)).join("")}</div>` : ""}</article>`;
 }
 
-function masteryTrackSection(store, track) {
+function masteryTrackSection(store, track, anchorId = "") {
   const groups = track?.groups || [];
   if (!groups.length) return "";
-  return `<div class="style-mastery"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.mastery"))}</p><h4>${escapeHtml(track.label?.[state.language] || track.label?.en || t(state.language, "labels.mastery"))}</h4></div><span class="tag">${formatCount(groups.length)} ${escapeHtml(t(state.language, "labels.masteryTiers"))}</span></div><div class="mastery-group-stack">${groups
+  return `<div class="style-mastery" ${anchorId ? `id="${anchorId}"` : ""}><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.mastery"))}</p><h4>${escapeHtml(track.label?.[state.language] || track.label?.en || t(state.language, "labels.mastery"))}</h4></div><span class="tag">${formatCount(groups.length)} ${escapeHtml(t(state.language, "labels.masteryTiers"))}</span></div><div class="mastery-group-stack">${groups
     .map((group) => {
       const milestones = group.milestones || [];
       return `<article class="mastery-group"><div class="mastery-group-head">${group.cover ? `<div class="mastery-group-cover"><img src="${group.cover}" alt="" loading="lazy" /></div>` : `<div class="mastery-group-cover mastery-group-cover-fallback">${icon("shield")}</div>`}<div class="style-copy"><p class="eyebrow">${escapeHtml(t(state.language, "labels.masteryTiers"))}</p><h4>${escapeHtml(group.label?.[state.language] || group.label?.en || "")}</h4><div class="detail-chip-row">${group.expValue ? `<span class="tag">${escapeHtml(`${formatCount(group.expValue)} XP`)}</span>` : ""}${group.currencyCost ? `<span class="tag">${escapeHtml(`${formatCount(group.currencyCost)} G`)}</span>` : ""}</div></div></div><div class="mastery-node-grid">${(group.nodes || []).map((node) => masteryNodeCard(store, node)).join("")}</div>${milestones.length ? `<div class="mastery-milestone-grid">${milestones.map((milestone) => masteryMilestoneCard(milestone)).join("")}</div>` : ""}</article>`;
@@ -1169,15 +1170,115 @@ function entryHeroStats(entry) {
   return cards.length ? `<div class="grid-3 compact-grid detail-stat-strip">${cards.slice(0, 3).join("")}</div>` : "";
 }
 
+function routeForCharacterStyle(entry, styleId) {
+  return { ...routeForEntry(state.language, entry), tab: "styles", style: styleId };
+}
+
+function combatFacetLabel(value) {
+  const labels = {
+    enemy: copy("Enemy", "Ennemi"),
+    myself: copy("Self", "Soi"),
+    ally: copy("Ally", "Allie"),
+    allies: copy("Allies", "Allies"),
+    Melee: copy("Melee", "Corps a corps"),
+    Range: copy("Ranged", "Distance"),
+    Ranged: copy("Ranged", "Distance"),
+    NormalAttack: copy("Basic attack", "Attaque de base"),
+    NormalSkill: copy("Skill E", "Competence E"),
+    ActiveThird: copy("Skill RMB", "Competence RMB"),
+    UltimateSkill: copy("Ultimate", "Ultime"),
+    Passive: copy("Passive", "Passif"),
+    AerialAttack: copy("Aerial attack", "Attaque aerienne"),
+    Avoidance: copy("Dodge", "Esquive"),
+    AirAvoidance: copy("Air dodge", "Esquive aerienne"),
+    JustAvoidance: copy("Perfect dodge", "Esquive parfaite"),
+    Pressed: copy("Tap input", "Appui simple"),
+    ChargeReady: copy("Hold stance", "Posture maintenue"),
+  };
+  return labels[value] || value;
+}
+
+function formatCombatNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? formatCount(numeric) : value;
+}
+
+function formatCombatTimer(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return "";
+  const seconds = numeric >= 1000 ? numeric / 1000 : numeric;
+  const rounded = Number.isInteger(seconds) ? String(seconds) : seconds.toFixed(seconds >= 10 ? 1 : 2).replace(/\.?0+$/, "");
+  return `${rounded}s`;
+}
+
+function characterFactCard(label, value) {
+  if (!label || !value) return "";
+  return `<div class="character-fact-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+}
+
+function characterStyleMetric(label, value) {
+  return `<span class="character-style-metric"><strong>${escapeHtml(value)}</strong><span>${escapeHtml(label)}</span></span>`;
+}
+
+function isPassiveSkill(skill) {
+  const slot = `${skill.slot?.en || ""} ${skill.slot?.[state.language] || ""}`.toLowerCase();
+  return slot.includes("passive") || slot.includes("passif") || (!skill.category && skill.target === "myself");
+}
+
+function isUltimateSkill(skill) {
+  const slot = `${skill.slot?.en || ""} ${skill.slot?.[state.language] || ""}`.toLowerCase();
+  return skill.category === "UltimateSkill" || slot.includes("ultimate") || slot.includes("ultime");
+}
+
+function characterStylePreviewCard(entry, style, activeStyleId = "") {
+  const href = buildRouteUrl(routeForCharacterStyle(entry, style.id));
+  const passive = (style.skills || []).find((skill) => isPassiveSkill(skill));
+  const chips = [
+    style.element?.[state.language] || style.element?.en || "",
+    style.role?.[state.language] || style.role?.en || "",
+  ]
+    .filter(Boolean)
+    .map((value) => `<span class="tag">${escapeHtml(value)}</span>`)
+    .join("");
+  return `<a class="character-style-card ${style.id === activeStyleId ? "is-active" : ""}" href="${href}" data-nav="true"><div class="character-style-head"><span class="detail-media-thumb detail-media-thumb-large">${style.icon ? `<img src="${style.icon}" alt="" loading="lazy" />` : icon("blade")}</span><div class="character-style-copy"><p class="eyebrow">${escapeHtml(copy("Weapon style", "Style d'arme"))}</p><strong>${escapeHtml(style.label?.[state.language] || style.label?.en || style.id)}</strong>${chips ? `<div class="detail-chip-row">${chips}</div>` : ""}</div></div><div class="character-style-metrics">${characterStyleMetric(copy("Skills", "Competences"), formatCount((style.skills || []).length))}${characterStyleMetric(copy("Mastery", "Maitrise"), formatCount(style.mastery?.groups?.length || 0))}${characterStyleMetric(copy("Potential", "Potentiel"), formatCount((style.potentialLevels || []).length))}</div>${passive?.name?.[state.language] || passive?.name?.en ? `<p class="character-style-note">${escapeHtml(copy("Signature passive", "Passif signature"))}: ${escapeHtml(passive.name?.[state.language] || passive.name?.en || "")}</p>` : ""}</a>`;
+}
+
+function characterEffectPreviewCard(effect) {
+  const href = buildRouteUrl(routeForEntry(state.language, effect));
+  const summary = text(effect, "description") || text(effect, "summary") || t(state.language, "labels.noDescription");
+  const eyebrow = primaryList(effect) === "debuffs" ? copy("Debuff", "Debuff") : copy("Buff", "Buff");
+  return `<article class="character-effect-card"><a class="character-effect-link" href="${href}" data-nav="true"><span class="detail-media-thumb">${effect.icon ? `<img src="${effect.icon}" alt="" loading="lazy" />` : icon(primaryList(effect) === "debuffs" ? "fang" : "star")}</span><span class="character-effect-copy"><p class="eyebrow">${escapeHtml(eyebrow)}</p><strong>${escapeHtml(text(effect, "name"))}</strong><span>${escapeHtmlWithBreaks(summary)}</span></span></a></article>`;
+}
+
+function characterOverviewSection(store, entry) {
+  const styles = entry.fields?.weaponStyles || [];
+  const profileRows = entry.fields?.profile || [];
+  const spotlightRows = [
+    { label: copy("Race", "Race"), value: entry.class || "" },
+    { label: copy("Rarity", "Rarete"), value: entry.rarity?.label?.[state.language] || entry.rarity?.label?.en || "" },
+    ...profileRows.filter((row) => ["gender", "birth", "height", "voice"].includes(row.id)).map((row) => ({
+      label: row.label?.[state.language] || row.label?.en || row.id,
+      value: row.value?.[state.language] || row.value?.en || "",
+    })),
+  ]
+    .filter((row) => row.value)
+    .slice(0, 6);
+  const effects = relatedEntries(store, entry)
+    .filter((item) => item.kind === "effect" || primaryList(item) === "buffs" || primaryList(item) === "debuffs")
+    .slice(0, 4);
+  const activeStyleId = activeStylePayload(entry)?.id || "";
+  return `<section class="page-section"><div class="character-overview-grid"><article class="panel-inner detail-section-card character-panel-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Combat kit", "Kit de combat"))}</p><h4>${escapeHtml(copy("Weapon styles", "Styles d'arme"))}</h4></div><span class="tag">${formatCount(styles.length)}</span></div><div class="character-style-grid">${styles.map((style) => characterStylePreviewCard(entry, style, activeStyleId)).join("")}</div></article><article class="panel-inner detail-section-card character-panel-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Identity", "Identite"))}</p><h4>${escapeHtml(copy("Character snapshot", "Vue rapide"))}</h4></div></div><div class="character-fact-grid">${spotlightRows.map((row) => characterFactCard(row.label, row.value)).join("")}</div></article>${effects.length ? `<article class="panel-inner detail-section-card character-panel-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Status pressure", "Pression d'etat"))}</p><h4>${escapeHtml(copy("Linked buffs & debuffs", "Buffs et debuffs lies"))}</h4></div><span class="tag">${formatCount(effects.length)}</span></div><div class="character-effect-list">${effects.map((effect) => characterEffectPreviewCard(effect)).join("")}</div></article>` : ""}</div></section>`;
+}
+
 function skillEffectRow(effect) {
   if (effect.kind === "attack") {
     const scaling = (effect.scaling || [])
       .map((row) => `<span class="tag">${escapeHtml(`${row.label?.[state.language] || row.label?.en || row.id} ${row.value?.[state.language] || row.value?.en || ""}`)}</span>`)
       .join("");
     const chips = [
-      effect.damageType ? `<span class="tag">${escapeHtml(effect.damageType)}</span>` : "",
+      effect.damageType ? `<span class="tag">${escapeHtml(combatFacetLabel(effect.damageType))}</span>` : "",
       effect.element ? `<span class="tag">${escapeHtml(effect.element)}</span>` : "",
-      effect.target ? `<span class="tag">${escapeHtml(effect.target)}</span>` : "",
+      effect.target ? `<span class="tag">${escapeHtml(combatFacetLabel(effect.target))}</span>` : "",
       effect.area ? `<span class="tag">${escapeHtml(effect.area)}</span>` : "",
       effect.chargeElement ? `<span class="tag">${escapeHtml(`+${effect.chargeElement}`)} ${escapeHtml(copy("element", "element"))}</span>` : "",
     ]
@@ -1204,27 +1305,29 @@ function potentialLevelCard(level) {
   return `<article class="variant-card potential-card"><div class="variant-card-head"><div><p class="eyebrow">${escapeHtml(copy("Potential", "Potentiel"))}</p><strong>${escapeHtml(`Lv. ${level.level}`)}</strong></div></div><p class="skill-card-text">${escapeHtmlWithBreaks(level.description?.[state.language] || level.description?.en || "")}</p>${changedSlots ? `<div class="detail-chip-row">${changedSlots}</div>` : ""}${level.bonuses?.length ? `<div class="mastery-bonus-list">${level.bonuses.map((bonus) => masteryBonusRow(bonus)).join("")}</div>` : ""}</article>`;
 }
 
-function potentialTrackSection(style) {
+function potentialTrackSection(style, anchorId = "") {
   const levels = style.potentialLevels || [];
   if (!levels.length) return "";
-  return `<div class="style-potential"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Potential upgrades", "Ameliorations de potentiel"))}</p><h4>${escapeHtml(copy("Weapon growth track", "Paliers du style d'arme"))}</h4></div><span class="tag">${formatCount(levels.length)} ${escapeHtml(copy("levels", "niveaux"))}</span></div><div class="potential-grid">${levels.map((level) => potentialLevelCard(level)).join("")}</div></div>`;
+  return `<div class="style-potential" ${anchorId ? `id="${anchorId}"` : ""}><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Potential upgrades", "Ameliorations de potentiel"))}</p><h4>${escapeHtml(copy("Weapon growth track", "Paliers du style d'arme"))}</h4></div><span class="tag">${formatCount(levels.length)} ${escapeHtml(copy("levels", "niveaux"))}</span></div><div class="potential-grid">${levels.map((level) => potentialLevelCard(level)).join("")}</div></div>`;
 }
 
 function skillCard(skill) {
-  const chips = [
-    skill.category ? `<span class="tag">${escapeHtml(skill.category)}</span>` : "",
-    skill.function ? `<span class="tag">${escapeHtml(skill.function)}</span>` : "",
-    skill.useType ? `<span class="tag">${escapeHtml(skill.useType)}</span>` : "",
-    skill.damageType ? `<span class="tag">${escapeHtml(skill.damageType)}</span>` : "",
-    skill.target ? `<span class="tag">${escapeHtml(skill.target)}</span>` : "",
-    skill.range ? `<span class="tag">${escapeHtml(`${skill.range} ${t(state.language, "labels.rangeUnit")}`)}</span>` : "",
-    skill.coolTime ? `<span class="tag">${escapeHtml(`${copy("CD", "CD")} ${skill.coolTime}s`)}</span>` : "",
-    skill.chargeTime ? `<span class="tag">${escapeHtml(`${copy("Charge", "Charge")} ${skill.chargeTime}s`)}</span>` : "",
-    skill.staminaCost ? `<span class="tag">${escapeHtml(`${copy("Stamina", "Endurance")} ${skill.staminaCost}`)}</span>` : "",
-    skill.hpCost ? `<span class="tag">${escapeHtml(`${copy("HP", "PV")} ${skill.hpCost}`)}</span>` : "",
-    skill.keyInputType ? `<span class="tag">${escapeHtml(skill.keyInputType)}</span>` : "",
-  ]
-    .filter(Boolean)
+  const slotLabel = skill.slot?.[state.language] || skill.slot?.en || "";
+  const rawChips = [
+    skill.category ? combatFacetLabel(skill.category) : "",
+    skill.function ? combatFacetLabel(skill.function) : "",
+    skill.useType ? combatFacetLabel(skill.useType) : "",
+    skill.damageType ? combatFacetLabel(skill.damageType) : "",
+    skill.target ? combatFacetLabel(skill.target) : "",
+    skill.range ? `${formatCombatNumber(skill.range)} ${t(state.language, "labels.rangeUnit")}` : "",
+    skill.coolTime ? `${copy("CD", "Recharge")} ${formatCombatTimer(skill.coolTime)}` : "",
+    skill.chargeTime ? `${copy("Charge", "Charge")} ${formatCombatTimer(skill.chargeTime)}` : "",
+    skill.staminaCost ? `${copy("Stamina", "Endurance")} ${formatCombatNumber(skill.staminaCost)}` : "",
+    skill.hpCost ? `${copy("HP", "PV")} ${formatCombatNumber(skill.hpCost)}` : "",
+    skill.keyInputType ? combatFacetLabel(skill.keyInputType) : "",
+  ].filter(Boolean);
+  const chips = [...new Set(rawChips.filter((value) => value.toLowerCase() !== slotLabel.toLowerCase()))]
+    .map((value) => `<span class="tag">${escapeHtml(value)}</span>`)
     .join("");
   const effectMarkup = (skill.effects || []).map((effect) => skillEffectRow(effect)).filter(Boolean).join("");
   return `<article class="skill-card"><div class="skill-card-head"><div class="skill-card-title"><span class="detail-media-thumb skill-card-icon">${skill.icon ? `<img src="${skill.icon}" alt="" loading="lazy" />` : icon("spark")}</span><div><p class="eyebrow">${escapeHtml(skill.slot?.[state.language] || skill.slot?.en || "")}</p><strong>${escapeHtml(skill.name?.[state.language] || skill.name?.en || skill.id)}</strong></div></div></div><p class="skill-card-text">${escapeHtmlWithBreaks(skill.description?.[state.language] || skill.description?.en || t(state.language, "labels.noDescription"))}</p>${skill.subDescription?.[state.language] || skill.subDescription?.en ? `<p class="skill-card-text skill-card-subtext">${escapeHtmlWithBreaks(skill.subDescription?.[state.language] || skill.subDescription?.en || "")}</p>` : ""}${chips ? `<div class="detail-chip-row">${chips}</div>` : ""}${effectMarkup ? `<div class="skill-effect-list">${effectMarkup}</div>` : ""}</article>`;
@@ -1249,15 +1352,10 @@ function detailTabMarkup(entry, tabs, activeTab) {
 function styleSelectorMarkup(entry, activeStyleId) {
   const styles = entry.fields?.weaponStyles || [];
   if (styles.length < 2) return "";
-  return `<div class="loot-toolbar detail-style-toolbar"><div class="loot-stage-picker"><span class="loot-stage-label">${escapeHtml(copy("Weapon style", "Style d'arme"))}</span><div class="loot-stage-tabs">${styles
-    .map(
-      (style) =>
-        `<a class="chip loot-stage-chip ${style.id === activeStyleId ? "is-active" : ""}" href="${buildRouteUrl({ ...state.route, tab: "styles", style: style.id })}" data-nav="true" ${style.id === activeStyleId ? 'aria-current="true"' : ""}>${escapeHtml(style.label?.[state.language] || style.label?.en || style.id)}</a>`,
-    )
-    .join("")}</div></div></div>`;
+  return `<div class="loot-toolbar detail-style-toolbar"><div class="loot-stage-picker"><span class="loot-stage-label">${escapeHtml(copy("Weapon style", "Style d'arme"))}</span><div class="character-style-grid">${styles.map((style) => characterStylePreviewCard(entry, style, activeStyleId)).join("")}</div></div></div>`;
 }
 
-function styleLinkedWeaponPanel(store, linkedEntry) {
+function styleLinkedWeaponPanel(store, linkedEntry, anchorId = "") {
   if (!linkedEntry) return "";
   const chips = [
     linkedEntry.rarity?.label?.[state.language] ? detailTag(linkedEntry.rarity.label[state.language], "rate") : "",
@@ -1266,7 +1364,58 @@ function styleLinkedWeaponPanel(store, linkedEntry) {
   ]
     .filter(Boolean)
     .join("");
-  return `<section class="page-section"><article class="panel-inner detail-section-card compact-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Linked weapon", "Arme liee"))}</p><h4>${escapeHtml(text(linkedEntry, "name"))}</h4></div><div class="entry-card-actions">${button(buildRouteUrl(routeForEntry(state.language, linkedEntry)), t(state.language, "actions.openWeapon"))}</div></div><div class="style-linked-weapon">${linkedEntry.icon ? `<span class="detail-media-thumb detail-media-thumb-large"><img src="${linkedEntry.icon}" alt="" loading="lazy" /></span>` : `<span class="detail-media-thumb detail-media-thumb-large">${icon("blade")}</span>`}<div class="style-linked-weapon-copy"><p class="skill-card-text">${escapeHtml(text(linkedEntry, "summary") || text(linkedEntry, "description"))}</p>${chips ? `<div class="detail-chip-row detail-chip-row-rich">${chips}</div>` : ""}</div></div></article></section>${itemEquipmentEffectsSection(linkedEntry)}${equipmentSetBonusSection(store, linkedEntry)}`;
+  return `<section class="page-section" ${anchorId ? `id="${anchorId}"` : ""}><article class="panel-inner detail-section-card compact-section-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Linked weapon", "Arme liee"))}</p><h4>${escapeHtml(text(linkedEntry, "name"))}</h4></div><div class="entry-card-actions">${button(buildRouteUrl(routeForEntry(state.language, linkedEntry)), t(state.language, "actions.openWeapon"))}</div></div><div class="style-linked-weapon">${linkedEntry.icon ? `<span class="detail-media-thumb detail-media-thumb-large"><img src="${linkedEntry.icon}" alt="" loading="lazy" /></span>` : `<span class="detail-media-thumb detail-media-thumb-large">${icon("blade")}</span>`}<div class="style-linked-weapon-copy"><p class="skill-card-text">${escapeHtml(text(linkedEntry, "summary") || text(linkedEntry, "description"))}</p>${chips ? `<div class="detail-chip-row detail-chip-row-rich">${chips}</div>` : ""}</div></div></article></section>${itemEquipmentEffectsSection(linkedEntry)}${equipmentSetBonusSection(store, linkedEntry)}`;
+}
+
+function styleFeatureCard(skill, eyebrow) {
+  if (!skill) return "";
+  const chips = [
+    skill.damageType ? combatFacetLabel(skill.damageType) : "",
+    skill.target ? combatFacetLabel(skill.target) : "",
+    skill.coolTime ? `${copy("CD", "Recharge")} ${formatCombatTimer(skill.coolTime)}` : "",
+  ]
+    .filter(Boolean)
+    .map((value) => `<span class="tag">${escapeHtml(value)}</span>`)
+    .join("");
+  return `<article class="command-card style-feature-card"><div class="command-card-head"><div><p class="eyebrow">${escapeHtml(eyebrow)}</p><h4>${escapeHtml(skill.name?.[state.language] || skill.name?.en || skill.id)}</h4></div></div><p class="command-card-text">${escapeHtmlWithBreaks(skill.description?.[state.language] || skill.description?.en || t(state.language, "labels.noDescription"))}</p>${chips ? `<div class="detail-chip-row">${chips}</div>` : ""}</article>`;
+}
+
+function styleSkillGroups(style) {
+  const groups = [
+    {
+      id: "style-skills",
+      eyebrow: copy("Core rotation", "Rotation offensive"),
+      title: copy("Attacks & active skills", "Attaques et competences actives"),
+      skills: (style.skills || []).filter((skill) => {
+        if (isPassiveSkill(skill) || isUltimateSkill(skill)) return false;
+        return !["AerialAttack", "Avoidance", "AirAvoidance", "JustAvoidance"].includes(skill.category);
+      }),
+    },
+    {
+      id: "style-burst",
+      eyebrow: copy("Power spike", "Pic de puissance"),
+      title: copy("Ultimate & passive", "Ultime et passif"),
+      skills: (style.skills || []).filter((skill) => isPassiveSkill(skill) || isUltimateSkill(skill)),
+    },
+    {
+      id: "style-mobility",
+      eyebrow: copy("Defense tools", "Outils defensifs"),
+      title: copy("Mobility & reactions", "Mobilite et reactions"),
+      skills: (style.skills || []).filter((skill) => ["AerialAttack", "Avoidance", "AirAvoidance", "JustAvoidance"].includes(skill.category)),
+    },
+  ];
+  return groups.filter((group) => group.skills.length);
+}
+
+function styleSkillGroupSection(group) {
+  if (!group.skills.length) return "";
+  return `<section class="page-section" id="${group.id}"><article class="panel-inner detail-section-card compact-section-card skill-group-panel"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(group.eyebrow)}</p><h4>${escapeHtml(group.title)}</h4></div><span class="tag">${formatCount(group.skills.length)}</span></div><div class="skill-grid">${group.skills.map((skill) => skillCard(skill)).join("")}</div></article></section>`;
+}
+
+function styleQuickNav(sections) {
+  const links = sections.filter((section) => section.enabled);
+  if (links.length < 2) return "";
+  return `<div class="detail-tab-bar style-section-nav">${links.map((section) => `<a class="chip detail-tab-link" href="#${section.id}">${escapeHtml(section.label)}</a>`).join("")}</div>`;
 }
 
 function weaponStyleSection(store, entry) {
@@ -1281,9 +1430,23 @@ function weaponStyleSection(store, entry) {
   ]
     .filter(Boolean)
     .join("");
-  const masteryMarkup = activeStyle.mastery?.groups?.length ? masteryTrackSection(store, activeStyle.mastery) : "";
-  const potentialMarkup = activeStyle.potentialLevels?.length ? potentialTrackSection(activeStyle) : "";
-  return `<section class="page-section">${styleSelectorMarkup(entry, activeStyle.id)}<article class="panel-inner detail-section-card style-card compact-section-card"><div class="style-head"><div class="detail-media-thumb detail-media-thumb-large">${activeStyle.icon ? `<img src="${activeStyle.icon}" alt="" loading="lazy" />` : icon("blade")}</div><div class="style-copy"><p class="eyebrow">${escapeHtml(t(state.language, "labels.weaponStyle"))}</p><h4>${escapeHtml(activeStyle.label?.[state.language] || activeStyle.label?.en || "")}</h4>${chips ? `<div class="detail-chip-row">${chips}</div>` : ""}</div></div><div class="skill-grid">${(activeStyle.skills || []).map((skill) => skillCard(skill)).join("")}</div>${potentialMarkup}${masteryMarkup}</article>${styleLinkedWeaponPanel(store, linked)}</section>`;
+  const masteryMarkup = activeStyle.mastery?.groups?.length ? masteryTrackSection(store, activeStyle.mastery, "style-mastery") : "";
+  const potentialMarkup = activeStyle.potentialLevels?.length ? potentialTrackSection(activeStyle, "style-potential") : "";
+  const passiveSkill = (activeStyle.skills || []).find((skill) => isPassiveSkill(skill));
+  const ultimateSkill = (activeStyle.skills || []).find((skill) => isUltimateSkill(skill));
+  const groupedSkills = styleSkillGroups(activeStyle);
+  const quickNav = styleQuickNav([
+    { id: "style-spotlight", label: copy("Overview", "Synthese"), enabled: true },
+    { id: "style-skills", label: copy("Skills", "Competences"), enabled: groupedSkills.some((group) => group.id === "style-skills") },
+    { id: "style-burst", label: copy("Burst", "Burst"), enabled: groupedSkills.some((group) => group.id === "style-burst") },
+    { id: "style-mobility", label: copy("Defense", "Defense"), enabled: groupedSkills.some((group) => group.id === "style-mobility") },
+    { id: "style-potential", label: copy("Potential", "Potentiel"), enabled: !!potentialMarkup },
+    { id: "style-mastery", label: copy("Mastery", "Maitrise"), enabled: !!masteryMarkup },
+    { id: "style-weapon", label: copy("Weapon", "Arme"), enabled: !!linked },
+  ]);
+  const styleStats = `<div class="detail-columns style-summary-grid">${stat(copy("Role", "Role"), activeStyle.role?.[state.language] || activeStyle.role?.en || "-", copy("Battle position", "Position de combat"))}${stat(copy("Element", "Element"), activeStyle.element?.[state.language] || activeStyle.element?.en || "-", copy("Primary damage element", "Element principal"))}${stat(copy("Skills", "Competences"), formatCount((activeStyle.skills || []).length), copy("Tracked actions on this style.", "Actions suivies pour ce style."))}${stat(copy("Potential", "Potentiel"), formatCount((activeStyle.potentialLevels || []).length), copy("Upgrade levels on this style.", "Paliers d'amelioration de ce style."))}</div>`;
+  const featureMarkup = passiveSkill || ultimateSkill ? `<div class="style-feature-grid">${styleFeatureCard(passiveSkill, copy("Signature passive", "Passif signature"))}${styleFeatureCard(ultimateSkill, copy("Finisher", "Finisher"))}</div>` : "";
+  return `<section class="page-section">${styleSelectorMarkup(entry, activeStyle.id)}${quickNav}<article class="panel-inner detail-section-card style-card compact-section-card style-command-card" id="style-spotlight"><div class="style-head"><div class="detail-media-thumb detail-media-thumb-large">${activeStyle.icon ? `<img src="${activeStyle.icon}" alt="" loading="lazy" />` : icon("blade")}</div><div class="style-copy"><p class="eyebrow">${escapeHtml(copy("Active combat profile", "Profil de combat actif"))}</p><h4>${escapeHtml(activeStyle.label?.[state.language] || activeStyle.label?.en || "")}</h4>${chips ? `<div class="detail-chip-row">${chips}</div>` : ""}<p class="skill-card-text">${escapeHtml(copy("Switch style to compare role, skill kit, weapon scaling, and progression on the same hero.", "Changez de style pour comparer le role, le kit, l'arme liee et la progression du meme heros."))}</p></div></div>${styleStats}${featureMarkup}</article>${groupedSkills.map((group) => styleSkillGroupSection(group)).join("")}${potentialMarkup}${masteryMarkup}${styleLinkedWeaponPanel(store, linked, "style-weapon")}</section>`;
 }
 
 function effectVariantSection(store, entry) {
@@ -1666,13 +1829,13 @@ export function renderEntry(store, entry) {
     const characterTabs = [
       {
         id: "styles",
-        label: copy("Styles", "Styles"),
+        label: copy("Combat", "Combat"),
         markup: weaponStyleSection(store, entry),
       },
       {
         id: "overview",
-        label: copy("Overview", "Apercu"),
-        markup: `${summaryColumns}${equipmentSection(store, entry)}${baseStatsSection(entry)}${profileSection(entry)}${commonMasterySection(store, entry)}${costumeEntries.length ? showcaseSection(store, costumeEntries, t(state.language, "labels.costumes"), t(state.language, "labels.costumes")) : ""}`,
+        label: copy("Profile", "Profil"),
+        markup: `${characterOverviewSection(store, entry)}${equipmentSection(store, entry)}${baseStatsSection(entry)}${profileSection(entry)}${commonMasterySection(store, entry)}${costumeEntries.length ? showcaseSection(store, costumeEntries, t(state.language, "labels.costumes"), t(state.language, "labels.costumes")) : ""}`,
       },
       {
         id: "links",
