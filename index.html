@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SevenCodex | Seven Deadly Sins: Origin Wiki Companion</title>
+    <meta
+      name="description"
+      content="SevenCodex is the bilingual wiki companion for Seven Deadly Sins: Origin, built as a structured reference next to SevenMap."
+    />
+    <meta name="theme-color" content="#07111f" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="sevenmap-base" content="../SevenMap/site/" />
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <div id="app" class="app-shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <a class="brand" href="./" data-nav="true" aria-label="SevenCodex home" data-i18n-aria-label="brand.homeAria">
+            <span class="brand-mark" aria-hidden="true">SC</span>
+            <span class="brand-copy">
+              <strong>SevenCodex</strong>
+              <span class="brand-subtitle" data-i18n="brand.subtitle">Bilingual game codex</span>
+            </span>
+          </a>
+          <p class="brand-tagline" data-i18n="brand.tagline">
+            Reference pages, search, and map-aware deep links for Seven Deadly Sins: Origin.
+          </p>
+        </div>
+
+        <nav id="topNav" class="top-nav" aria-label="SevenCodex sections" data-i18n-aria-label="nav.sectionsAria"></nav>
+
+        <div class="topbar-actions">
+          <div class="search-stack">
+            <form id="globalSearchForm" class="search-bar" role="search" autocomplete="off">
+              <label class="sr-only" for="searchInput" data-i18n="search.label">Search SevenCodex</label>
+              <span class="search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M10.5 4a6.5 6.5 0 1 0 4.03 11.6l4.43 4.44 1.41-1.42-4.43-4.43A6.5 6.5 0 0 0 10.5 4m0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9"></path></svg>
+              </span>
+              <input
+                id="searchInput"
+                type="search"
+                name="search"
+                placeholder="Search SevenCodex"
+                data-i18n-placeholder="shell.searchPlaceholder"
+                data-i18n-aria-label="search.label"
+                aria-autocomplete="list"
+                aria-controls="searchSuggestions"
+                aria-expanded="false"
+              />
+              <button
+                id="clearSearchBtn"
+                type="button"
+                class="button button-secondary search-clear-btn"
+                data-i18n="shell.clear"
+                data-i18n-aria-label="shell.clear"
+              >
+                Clear
+              </button>
+            </form>
+            <div id="searchSuggestions" class="search-suggestions" role="listbox" hidden></div>
+          </div>
+
+          <a
+            id="openMapLink"
+            class="button button-secondary open-map-link"
+            href="../SevenMap/site/"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-i18n="actions.openSevenMap"
+          >
+            Open SevenMap
+          </a>
+
+          <button
+            id="inspectorToggle"
+            class="icon-btn icon-btn-secondary panel-toggle"
+            type="button"
+            aria-controls="inspector"
+            aria-expanded="false"
+          >
+            <span data-i18n="shell.details">Details</span>
+          </button>
+
+          <div class="language-switch" role="group" aria-label="Language switch" data-i18n-aria-label="shell.languageSwitch">
+            <button type="button" class="lang-btn" data-lang="en">EN</button>
+            <button type="button" class="lang-btn" data-lang="fr">FR</button>
+          </div>
+        </div>
+      </header>
+
+      <button
+        id="panelBackdrop"
+        class="panel-backdrop"
+        type="button"
+        hidden
+        aria-hidden="true"
+        data-i18n-aria-label="shell.closePanels"
+      ></button>
+
+      <div class="app-body">
+        <main class="content">
+          <section class="hero panel" aria-labelledby="heroTitle"></section>
+
+          <section class="panel workspace">
+            <div class="workspace-header">
+              <div>
+                <p class="eyebrow" data-i18n="workspace.eyebrow">Current view</p>
+                <nav id="breadcrumbs" class="breadcrumbs" data-i18n-aria-label="workspace.breadcrumbs"></nav>
+                <h2 id="pageTitle">Home</h2>
+                <p id="pageSubtitle" class="workspace-subtitle"></p>
+              </div>
+              <div class="workspace-meta">
+                <span id="viewPill" class="pill">Home</span>
+                <span id="languagePill" class="pill pill-soft">EN</span>
+              </div>
+            </div>
+
+            <div id="pageBody" class="page-body"></div>
+          </section>
+        </main>
+
+        <aside id="inspector" class="inspector panel">
+          <section class="panel-section">
+            <div class="panel-heading">
+              <p class="eyebrow" data-i18n="inspector.section">Inspector</p>
+              <h2 data-i18n="inspector.title">Context</h2>
+            </div>
+            <div id="inspectorBody" class="inspector-body"></div>
+          </section>
+
+          <section class="panel-section">
+            <div class="panel-heading">
+              <p class="eyebrow" data-i18n="search.section">Search</p>
+              <h2 data-i18n="search.title">Structured lookup</h2>
+            </div>
+            <div id="searchSummary" class="search-summary"></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <p data-i18n="footer.copy">Static first. Data-driven next. Built to stay coherent with SevenMap.</p>
+        <div class="footer-links">
+          <a href="./?view=page&kind=about" data-nav="true" data-i18n="footer.about">Read methodology</a>
+          <a id="footerMapLink" href="../SevenMap/site/" target="_blank" rel="noopener noreferrer" data-i18n="actions.openSevenMap">Open SevenMap</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
