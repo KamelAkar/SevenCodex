@@ -184,7 +184,6 @@
 .search-suggestion-copy strong,
 .entry-card-copy strong,
 .guide-card strong,
-.stat-card strong,
 .feature-card strong {
   font-family: var(--font-display);
   font-weight: 600;
@@ -263,6 +262,14 @@
   margin: 6px 0 5px;
   font-size: 1.04rem;
   color: var(--accent-strong);
+}
+
+.stat-card strong {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1, "kern" 1;
 }
 
 .stat-card p,
@@ -459,6 +466,25 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .page-heading,
+  .page-toolbar,
+  .search-suggestions-head,
+  .footer-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-toolbar .entry-card-actions,
+  .page-heading .entry-card-actions {
+    width: 100%;
+  }
+
+  .page-toolbar .button,
+  .page-heading .button,
+  .footer-links a {
+    width: 100%;
+  }
+
   .mobile-only {
     display: inline-flex;
   }
@@ -467,5 +493,14 @@
 @media (max-width: 460px) {
   .entry-grid-tight {
     grid-template-columns: 1fr;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-row span:last-child {
+    text-align: left;
   }
 }

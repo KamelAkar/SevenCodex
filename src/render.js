@@ -1,6 +1,7 @@
 import { resolveEntry, searchEntries } from "./data-store.js";
 import { t } from "./i18n.js";
 import { buildSevenMapUrl } from "./map-links.js";
+import { syncSeo } from "./seo.js";
 import { state } from "./state.js";
 import { escapeHtml, formatCount, kvRows } from "./utils.js";
 import { buildRouteUrl } from "./router.js";
@@ -25,6 +26,7 @@ export function renderApp() {
   renderTopNav();
   renderHero();
   renderPage();
+  syncSeo(state.data, state.route);
   renderInspector();
   renderSearchSummary();
   renderSearchSuggestions();
@@ -35,7 +37,6 @@ export function renderApp() {
 export function renderLanguageControls() {
   document.querySelectorAll(".lang-btn").forEach((buttonNode) => buttonNode.classList.toggle("is-active", buttonNode.dataset.lang === state.language));
   document.documentElement.lang = state.language;
-  document.title = `SevenCodex | ${routeTitle(state.data, state.route)}`;
   const languagePill = document.getElementById("languagePill");
   if (languagePill) languagePill.textContent = state.language.toUpperCase();
   const openMapLink = document.getElementById("openMapLink");

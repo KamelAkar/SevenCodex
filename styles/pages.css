@@ -697,9 +697,13 @@
 }
 
 .character-style-metric strong {
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: 1.04rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1, "kern" 1;
 }
 
 .character-style-metric span {
@@ -752,9 +756,13 @@
 }
 
 .character-fact-card strong {
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   line-height: 1.02;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1, "kern" 1;
 }
 
 .character-effect-card,
@@ -793,9 +801,13 @@
 }
 
 .character-stat-card strong {
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   font-size: 1.34rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
   line-height: 0.94;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1, "kern" 1;
 }
 
 .detail-media-list,
@@ -1720,6 +1732,20 @@
   padding-inline: 4px;
 }
 
+.auto-load-sentinel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 12px 4px 4px;
+}
+
+.auto-load-count {
+  min-width: 0;
+}
+
 .recipe-focus-card {
   background:
     radial-gradient(circle at top left, rgba(234, 177, 90, 0.14), transparent 28%),
@@ -1802,12 +1828,8 @@
 }
 
 @media (max-width: 640px) {
-  .top-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .entry-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   }
 
   .loot-card-grid,
@@ -1821,11 +1843,11 @@
   .character-loadout-grid,
   .character-stat-grid,
   .style-feature-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   }
 
   .command-card-preview {
-    grid-template-columns: repeat(3, minmax(72px, 1fr));
+    grid-template-columns: repeat(2, minmax(92px, 1fr));
   }
 
   .detail-hero-head {
@@ -1840,7 +1862,7 @@
 
   .character-fact-grid,
   .character-profile-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(148px, 100%), 1fr));
   }
 
   .search-stack {
@@ -1853,10 +1875,6 @@
 }
 
 @media (max-width: 460px) {
-  .top-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .entry-grid {
     grid-template-columns: 1fr;
   }

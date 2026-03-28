@@ -4539,14 +4539,17 @@ def build_item_entries(
         icon = assets.resolve_stem(item_icon_candidates(localizer, row, item_id), "items")
         rarity = rarity_payload(row.get("Grade"))
         item_type = first_text(row.get("ItemDetailType"), row.get("ItemDivision"), row.get("ItemType"))
-        lists = ["items"]
+        lists = []
         if source_relations.get(item_id, {}).get("nodes"):
-            lists.insert(0, "materials")
+            lists.append("materials")
         if first_text(row.get("ItemType")).lower() == "equip":
-            lists.append("equipment")
             detail_list = ITEM_DETAIL_LISTS.get(first_text(row.get("ItemDetailType")).lower())
             if detail_list and not (detail_list == "armor" and normalize_token(row.get("ItemDivision")) == "bindarmor"):
                 lists.append(detail_list)
+            lists.append("equipment")
+        if not lists:
+            lists.append("items")
+        lists = unique(lists)
         classification = first_text(row.get("ItemDivision"), row.get("ItemDetailType"), row.get("ItemType"))
         relation_map = source_relations.get(item_id, {})
         related_characters = unique(relation_map.get("characters", []))

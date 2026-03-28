@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">SevenCodex social card</title>
+  <desc id="desc">SevenCodex, bilingual wiki and atlas companion for Seven Deadly Sins: Origin, created by Ravnow.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c1a2d" />
+      <stop offset="55%" stop-color="#101f38" />
+      <stop offset="100%" stop-color="#1b2436" />
+    </linearGradient>
+    <radialGradient id="glowBlue" cx="22%" cy="18%" r="55%">
+      <stop offset="0%" stop-color="#7fc9ff" stop-opacity="0.48" />
+      <stop offset="100%" stop-color="#7fc9ff" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowGold" cx="82%" cy="82%" r="48%">
+      <stop offset="0%" stop-color="#eab15a" stop-opacity="0.34" />
+      <stop offset="100%" stop-color="#eab15a" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect width="1200" height="630" fill="url(#glowBlue)" />
+  <rect width="1200" height="630" fill="url(#glowGold)" />
+  <g opacity="0.28" stroke="#9fd3ff" stroke-width="2" fill="none">
+    <path d="M72 111h390" />
+    <path d="M72 147h290" />
+    <path d="M72 183h210" />
+    <path d="M72 509h1056" />
+  </g>
+  <g transform="translate(72 74)">
+    <rect width="118" height="118" rx="28" fill="#111f36" stroke="#8fc8ff" stroke-opacity="0.45" />
+    <text x="59" y="74" text-anchor="middle" fill="#f4f8ff" font-size="52" font-family="Georgia, Times New Roman, serif">SC</text>
+  </g>
+  <g transform="translate(226 104)">
+    <text fill="#eab15a" font-size="24" font-family="Arial, Helvetica, sans-serif" letter-spacing="5">EARLY ACCESS</text>
+    <text y="88" fill="#f8fbff" font-size="86" font-weight="700" font-family="Georgia, Times New Roman, serif">SevenCodex</text>
+    <text y="146" fill="#bcd0e8" font-size="32" font-family="Arial, Helvetica, sans-serif">7DS Origin Wiki, atlas and SevenMap companion</text>
+  </g>
+  <g transform="translate(72 290)">
+    <rect width="1056" height="196" rx="30" fill="#0d1728" fill-opacity="0.72" stroke="#8fc8ff" stroke-opacity="0.16" />
+    <text x="38" y="62" fill="#f6fbff" font-size="34" font-family="Arial, Helvetica, sans-serif">Real game data, bilingual search, route-aware links and codex pages built by Ravnow.</text>
+    <text x="38" y="116" fill="#b7cce4" font-size="28" font-family="Arial, Helvetica, sans-serif">Characters, items, bosses, systems, recipes and map-connected references for Seven Deadly Sins: Origin.</text>
+    <text x="38" y="164" fill="#8fc8ff" font-size="24" font-family="Arial, Helvetica, sans-serif">Responsive interface. Structured SEO. Static-first delivery.</text>
+  </g>
+</svg>

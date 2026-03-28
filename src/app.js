@@ -21,6 +21,7 @@ const FILTER_INPUT_DEBOUNCE_MS = 120;
 let lastMobileViewport = false;
 let suggestionTimer = 0;
 let routeQueryTimer = 0;
+let autoLoadObserver = null;
 
 function isMobileViewport() {
   return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
@@ -90,7 +91,7 @@ function updateRoute(nextRoute, options = {}) {
   state.route = normalizeRoute(nextRoute);
   state.pendingQuery = state.route.q || "";
   navigate(state.route, options);
-  renderApp();
+  renderUi();
 }
 
 function setLanguage(language) {
@@ -135,7 +136,43 @@ function togglePanel(panel) {
 
 function hydrate() {
   syncStaticTranslations();
+  renderUi();
+}
+
+function disconnectAutoLoadObserver() {
+  if (autoLoadObserver) {
+    autoLoadObserver.disconnect();
+    autoLoadObserver = null;
+  }
+}
+
+function syncAutoLoadObserver() {
+  disconnectAutoLoadObserver();
+  const sentinel = document.getElementById("autoLoadSentinel");
+  if (!sentinel || typeof window.IntersectionObserver !== "function") return;
+  const nextLimit = Number.parseInt(sentinel.dataset.nextLimit || "", 10);
+  if (!Number.isFinite(nextLimit) || nextLimit <= 0) return;
+  autoLoadObserver = new window.IntersectionObserver(
+    (entries) => {
+      const isVisible = entries.some((entry) => entry.isIntersecting);
+      if (!isVisible) return;
+      disconnectAutoLoadObserver();
+      if (String(state.route.limit || "") === String(nextLimit)) return;
+      updateRoute({ ...state.route, limit: String(nextLimit) }, { replace: true });
+    },
+    {
+      rootMargin: "0px 0px 320px 0px",
+      threshold: 0.01,
+    },
+  );
+  autoLoadObserver.observe(sentinel);
+}
+
+function renderUi() {
   renderApp();
+  window.requestAnimationFrame(() => {
+    syncAutoLoadObserver();
+  });
 }
 
 function submitSearch(query) {
@@ -207,7 +244,7 @@ function resolveMapLinkUrl(href) {
 function bindEvents() {
   window.addEventListener("popstate", () => {
     syncRouteFromLocation();
-    renderApp();
+    renderUi();
   });
 
   window.addEventListener("keydown", (event) => {
@@ -263,7 +300,7 @@ function bindEvents() {
         state.route = normalizeRoute(parseRoute(url));
         state.pendingQuery = state.route.q || "";
         navigate(state.route);
-        renderApp();
+        renderUi();
       }
       return;
     }
@@ -384,7 +421,7 @@ async function boot() {
   renderLoading();
   try {
     state.data = await loadCodexData();
-    renderApp();
+    renderUi();
   } catch (error) {
     renderError(error.message);
     renderInspector();

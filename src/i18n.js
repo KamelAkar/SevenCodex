@@ -11,11 +11,14 @@ const UI_LOCALES = {
       homeAria: "SevenCodex home",
       subtitle: "Game wiki & atlas",
       tagline: "Real game data, bilingual search, and direct routes into SevenMap.",
+      status: "SevenCodex is still under construction and created by Ravnow.",
     },
     shell: {
       browse: "Browse",
       details: "Details",
       languageSwitch: "Language switch",
+      skipToContent: "Skip to content",
+      earlyAccess: "Early access",
       searchPlaceholder: "Search SevenCodex",
       clear: "Clear",
       loading: "Loading codex data...",
@@ -188,6 +191,8 @@ const UI_LOCALES = {
     },
     footer: {
       copy: "Real data. Static delivery. Built to stay aligned with SevenMap.",
+      status: "Early access: the site is still under construction.",
+      creator: "Created by Ravnow.",
       about: "Read methodology",
     },
     copy: {
@@ -219,12 +224,15 @@ const UI_LOCALES = {
     brand: {
       homeAria: "Accueil SevenCodex",
       subtitle: "Wiki & atlas du jeu",
+      status: "SevenCodex est encore en cours de construction et créé par Ravnow.",
       tagline: "Données réelles du jeu, recherche bilingue et liens directs vers SevenMap.",
     },
     shell: {
       browse: "Parcourir",
       details: "Détails",
       languageSwitch: "Selection de langue",
+      skipToContent: "Aller au contenu",
+      earlyAccess: "Accès anticipé",
       searchPlaceholder: "Rechercher dans SevenCodex",
       clear: "Effacer",
       loading: "Chargement des données du codex...",
@@ -397,6 +405,8 @@ const UI_LOCALES = {
     },
     footer: {
       copy: "Données réelles. Livraison statique. Conçu pour rester aligné avec SevenMap.",
+      status: "Accès anticipé : le site est encore en cours de construction.",
+      creator: "Créé par Ravnow.",
       about: "Lire la méthodologie",
     },
     copy: {

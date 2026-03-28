@@ -8,19 +8,46 @@
       name="description"
       content="SevenCodex is the bilingual wiki companion for Seven Deadly Sins: Origin, built as a structured reference next to SevenMap."
     />
+    <meta name="author" content="Ravnow" />
+    <meta name="creator" content="Ravnow" />
+    <meta name="generator" content="SevenCodex static app" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="format-detection" content="telephone=no" />
     <meta name="theme-color" content="#07111f" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="googlebot" content="index,follow,max-image-preview:large" />
+    <meta property="og:site_name" content="SevenCodex" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="SevenCodex | Seven Deadly Sins: Origin Wiki Companion" />
+    <meta property="og:description" content="SevenCodex is the bilingual wiki companion for Seven Deadly Sins: Origin, built as a structured reference next to SevenMap." />
+    <meta property="og:image" content="./assets/og-card.svg" />
+    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:alt" content="SevenCodex, bilingual wiki and atlas companion for Seven Deadly Sins: Origin" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SevenCodex | Seven Deadly Sins: Origin Wiki Companion" />
+    <meta name="twitter:description" content="SevenCodex is the bilingual wiki companion for Seven Deadly Sins: Origin, built as a structured reference next to SevenMap." />
+    <meta name="twitter:image" content="./assets/og-card.svg" />
     <meta name="sevenmap-base" content="https://sevenmap.com/" />
-    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css?v=20260328-maplink-hotfix" />
-    <script type="module" src="./src/app.js?v=20260328-maplink-hotfix"></script>
+    <link rel="canonical" href="./?lang=en&view=home" />
+    <link rel="alternate" hreflang="en" href="./?lang=en&view=home" />
+    <link rel="alternate" hreflang="fr" href="./?lang=fr&view=home" />
+    <link rel="alternate" hreflang="x-default" href="./?lang=en&view=home" />
+    <link rel="icon" href="./assets/sevenmap-favicon.ico?v=20260328" sizes="any" />
+    <link rel="apple-touch-icon" href="./assets/sevenmap-logo.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <link rel="stylesheet" href="./styles.css?v=20260328-release-readiness" />
+    <script id="structuredData" type="application/ld+json"></script>
+    <script type="module" src="./src/app.js?v=20260328-release-readiness"></script>
   </head>
   <body>
+    <a class="skip-link" href="#mainContent" data-i18n="shell.skipToContent">Skip to content</a>
     <div id="app" class="app-shell">
       <header class="topbar">
         <div class="brand-block">
           <a class="brand" href="./" data-nav="true" aria-label="SevenCodex home" data-i18n-aria-label="brand.homeAria">
-            <span class="brand-mark" aria-hidden="true">SC</span>
+            <span class="brand-mark" aria-hidden="true">
+              <img src="./assets/sevenmap-logo.png" alt="" />
+            </span>
             <span class="brand-copy">
               <strong>SevenCodex</strong>
               <span class="brand-subtitle" data-i18n="brand.subtitle">Bilingual game codex</span>
@@ -29,6 +56,12 @@
           <p class="brand-tagline" data-i18n="brand.tagline">
             Reference pages, search, and map-aware deep links for Seven Deadly Sins: Origin.
           </p>
+          <div class="site-status" role="note" aria-live="polite">
+            <span class="pill pill-soft site-status-pill" data-i18n="shell.earlyAccess">Early access</span>
+            <p class="site-status-text" data-i18n="brand.status">
+              SevenCodex is still under construction and created by Ravnow.
+            </p>
+          </div>
         </div>
 
         <nav id="topNav" class="top-nav" aria-label="SevenCodex sections" data-i18n-aria-label="nav.sectionsAria"></nav>
@@ -102,7 +135,7 @@
       ></button>
 
       <div class="app-body">
-        <main class="content">
+        <main id="mainContent" class="content">
           <section class="hero panel" aria-labelledby="heroTitle"></section>
 
           <section class="panel workspace">
@@ -143,12 +176,21 @@
       </div>
 
       <footer class="footer">
-        <p data-i18n="footer.copy">Static first. Data-driven next. Built to stay coherent with SevenMap.</p>
+        <div class="footer-meta">
+          <p data-i18n="footer.copy">Static first. Data-driven next. Built to stay coherent with SevenMap.</p>
+          <p class="footer-status" data-i18n="footer.status">Early access: the site is still under construction.</p>
+          <p class="footer-credit" data-i18n="footer.creator">Created by Ravnow.</p>
+        </div>
         <div class="footer-links">
           <a href="./?view=page&kind=about" data-nav="true" data-i18n="footer.about">Read methodology</a>
           <a id="footerMapLink" href="../SevenMap/site/" target="_blank" rel="noopener noreferrer" data-i18n="actions.openSevenMap">Open SevenMap</a>
         </div>
       </footer>
     </div>
+    <noscript>
+      <div class="noscript-banner">
+        SevenCodex requires JavaScript to render its generated wiki data and map links.
+      </div>
+    </noscript>
   </body>
 </html>

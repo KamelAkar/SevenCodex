@@ -1,24 +1,4 @@
-@font-face {
-  font-family: "PT Serif Pro";
-  src:
-    local("PT Serif Pro"),
-    local("PT Serif"),
-    local("PTSerif-Regular");
-  font-style: normal;
-  font-weight: 400;
-}
-
-@font-face {
-  font-family: "PT Serif Pro";
-  src:
-    local("PT Serif Pro Bold"),
-    local("PT Serif Bold"),
-    local("PTSerif-Bold");
-  font-style: normal;
-  font-weight: 700;
-}
-
-@import url("https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600;700&display=swap");
 
 :root {
   --bg-1: #04070d;
@@ -44,9 +24,9 @@
   --radius-lg: 20px;
   --radius-md: 16px;
   --radius-sm: 12px;
-  --font-body: "PT Serif Pro", "PT Serif", Georgia, serif;
-  --font-ui: "PT Serif Pro", "PT Serif", Georgia, serif;
-  --font-display: "PT Serif Pro", "PT Serif", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-ui: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-display: "IBM Plex Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
 }
 
 * {
@@ -64,6 +44,7 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   font-feature-settings: "liga" 1, "kern" 1;
+  font-synthesis: none;
   position: relative;
   min-height: 100svh;
   background:

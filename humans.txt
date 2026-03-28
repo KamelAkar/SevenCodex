@@ -1,0 +1,7 @@
+/* TEAM */
+Creator: Ravnow
+Site: SevenCodex
+Status: Early access / under construction
+
+/* THANKS */
+Project context: Seven Deadly Sins: Origin exports and SevenMap-linked data
