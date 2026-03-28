@@ -44,6 +44,7 @@ PACKAGE_ASSET_SUFFIXES = {".uasset"}
 
 MAP_DATA_PATH = SITE_DATA_DIR / "map_data.json"
 MAP_DATA_FULL_PATH = SITE_DATA_DIR / "map_data_full.json"
+CLOUDFLARE_MAX_ASSET_BYTES = 25 * 1024 * 1024
 
 REGION_LABELS_FR = {
     "Liones": "Liones",
@@ -814,9 +815,33 @@ def read_json(path: Path, *, sanitize: bool = False):
     return json.loads(text, strict=False)
 
 
-def write_json(path: Path, payload) -> None:
+def write_json(path: Path, payload, *, pretty: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+    json_text = (
+        json.dumps(payload, indent=2, ensure_ascii=True)
+        if pretty
+        else json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+    )
+    path.write_text(json_text + "\n", encoding="utf-8")
+
+
+def verify_cloudflare_asset_sizes(paths: List[Path]) -> Dict[str, int]:
+    sizes = {}
+    oversized = []
+    for path in paths:
+        size = path.stat().st_size
+        sizes[path.name] = size
+        if size > CLOUDFLARE_MAX_ASSET_BYTES:
+            oversized.append((path.name, size))
+    if oversized:
+        lines = [
+            f"{name}: {size / (1024 * 1024):.2f} MiB"
+            for name, size in oversized
+        ]
+        raise SystemExit(
+            "Generated asset exceeds Cloudflare's 25 MiB per-file limit:\n  " + "\n  ".join(lines)
+        )
+    return sizes
 
 
 def slugify(value: object) -> str:
@@ -6569,27 +6594,38 @@ def main() -> None:
     search_index = build_search_index(all_entries)
     manifest = build_manifest(all_entries, region_entries)
 
-    write_json(CODEX_DATA_DIR / "manifest.json", manifest)
-    write_json(CODEX_DATA_DIR / "regions.json", region_entries)
-    write_json(CODEX_DATA_DIR / "entries-resources.json", node_entries + item_entries + recipe_entries)
-    write_json(CODEX_DATA_DIR / "entries-heroes.json", character_entries + costume_entries + effect_entries)
-    write_json(CODEX_DATA_DIR / "entries-creatures.json", pet_entries + boss_entries + monster_entries + fishing_entries)
-    write_json(
+    generated_paths = [
+        CODEX_DATA_DIR / "manifest.json",
+        CODEX_DATA_DIR / "regions.json",
+        CODEX_DATA_DIR / "entries-resources.json",
+        CODEX_DATA_DIR / "entries-heroes.json",
+        CODEX_DATA_DIR / "entries-creatures.json",
         CODEX_DATA_DIR / "entries-systems.json",
+        CODEX_DATA_DIR / "search-index.json",
+    ]
+
+    write_json(generated_paths[0], manifest)
+    write_json(generated_paths[1], region_entries)
+    write_json(generated_paths[2], node_entries + item_entries + recipe_entries)
+    write_json(generated_paths[3], character_entries + costume_entries + effect_entries)
+    write_json(generated_paths[4], pet_entries + boss_entries + monster_entries + fishing_entries)
+    write_json(
+        generated_paths[5],
         waypoint_entries + portal_entries + puzzle_entries + unlock_entries + quest_entries,
     )
-    write_json(CODEX_DATA_DIR / "search-index.json", search_index)
+    write_json(generated_paths[6], search_index)
+    generated_sizes = verify_cloudflare_asset_sizes(generated_paths)
 
     summary = {
         "manifest": manifest["counts"],
+        "cloudflareAssetLimitMiB": round(CLOUDFLARE_MAX_ASSET_BYTES / (1024 * 1024), 2),
         "files": [
-            "manifest.json",
-            "regions.json",
-            "entries-resources.json",
-            "entries-heroes.json",
-            "entries-creatures.json",
-            "entries-systems.json",
-            "search-index.json",
+            {
+                "name": path.name,
+                "sizeBytes": generated_sizes[path.name],
+                "sizeMiB": round(generated_sizes[path.name] / (1024 * 1024), 2),
+            }
+            for path in generated_paths
         ],
     }
     write_json(CODEX_DATA_DIR / "build-summary.json", summary)
