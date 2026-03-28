@@ -6,7 +6,8 @@ import { hubMeta, listMeta, pageId, pageText, primaryList, renderBreadcrumbs, ro
 
 const SITE_NAME = "SevenCodex";
 const SITE_AUTHOR = "Ravnow";
-const SITE_OG_IMAGE = "./assets/og-card.svg";
+const SITE_URL = "https://sevencodex.com/";
+const SITE_OG_IMAGE = "/assets/og-card.svg";
 
 const SITE_SUMMARY = {
   en: "SevenCodex is the bilingual wiki companion for Seven Deadly Sins: Origin, with structured game data, search, and direct links into SevenMap.",
@@ -61,7 +62,7 @@ function setLink(rel, href, extra = {}) {
 }
 
 function absoluteAssetUrl(path) {
-  return new URL(path, window.location.href).toString();
+  return new URL(path, SITE_URL).toString();
 }
 
 function sanitizeRoute(route) {
@@ -103,7 +104,11 @@ function canonicalRoute(store, route) {
 }
 
 function routeUrl(route) {
-  return new URL(buildRouteUrl(route), window.location.origin).toString();
+  const url = new URL(buildRouteUrl(route), SITE_URL);
+  if (url.pathname.endsWith("/index.html")) {
+    url.pathname = url.pathname.slice(0, -"/index.html".length) || "/";
+  }
+  return url.toString();
 }
 
 function routeScopeLabel(store, route, entry) {

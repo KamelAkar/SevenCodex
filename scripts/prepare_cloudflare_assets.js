@@ -8,6 +8,7 @@ const PUBLIC_ENTRIES = [
   "index.html",
   "styles.css",
   "robots.txt",
+  "sitemap.xml",
   "humans.txt",
   "site.webmanifest",
   "assets",

@@ -2,21 +2,22 @@
   "name": "SevenCodex",
   "short_name": "SevenCodex",
   "description": "Bilingual Seven Deadly Sins: Origin wiki companion with direct SevenMap links.",
+  "id": "/",
   "lang": "en",
-  "start_url": "./?lang=en&view=home",
-  "scope": "./",
+  "start_url": "/?lang=en&view=home",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#07111f",
   "theme_color": "#07111f",
   "icons": [
     {
-      "src": "./assets/sevenmap-logo.png",
+      "src": "/assets/sevenmap-logo.png",
       "sizes": "237x256",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./assets/sevenmap-favicon.ico",
+      "src": "/assets/sevenmap-favicon.ico",
       "sizes": "any",
       "type": "image/x-icon",
       "purpose": "any"

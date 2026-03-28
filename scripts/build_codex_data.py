@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import urlopen
 
 from resource_resolver import ResourceResolver, repair_mojibake
@@ -45,6 +46,8 @@ PACKAGE_ASSET_SUFFIXES = {".uasset"}
 MAP_DATA_PATH = SITE_DATA_DIR / "map_data.json"
 MAP_DATA_FULL_PATH = SITE_DATA_DIR / "map_data_full.json"
 CLOUDFLARE_MAX_ASSET_BYTES = 25 * 1024 * 1024
+SITE_URL = "https://sevencodex.com/"
+GUIDE_PAGE_IDS = ["about", "methodology", "sources", "versioning"]
 
 REGION_LABELS_FR = {
     "Liones": "Liones",
@@ -842,6 +845,76 @@ def verify_cloudflare_asset_sizes(paths: List[Path]) -> Dict[str, int]:
             "Generated asset exceeds Cloudflare's 25 MiB per-file limit:\n  " + "\n  ".join(lines)
         )
     return sizes
+
+
+def build_codex_url(params: Dict[str, str]) -> str:
+    filtered = [(key, value) for key, value in params.items() if value]
+    return f"{SITE_URL}?{urlencode(filtered)}" if filtered else SITE_URL
+
+
+def xml_escape(value: object) -> str:
+    text = str(value or "")
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&apos;")
+    )
+
+
+def build_sitemap_xml(manifest: Dict, entries: List[Dict]) -> str:
+    generated_at = manifest.get("generatedAt") or datetime.now(timezone.utc).isoformat()
+    routes: List[Tuple[str, str]] = []
+
+    for language in ["en", "fr"]:
+        routes.append((build_codex_url({"lang": language, "view": "home"}), language))
+        for hub_id in HUBS:
+            routes.append((build_codex_url({"lang": language, "view": "hub", "kind": hub_id}), language))
+        for list_id, meta in LISTS.items():
+            if meta.get("hidden"):
+                continue
+            routes.append((build_codex_url({"lang": language, "view": "list", "kind": list_id}), language))
+        for page_id in GUIDE_PAGE_IDS:
+            routes.append((build_codex_url({"lang": language, "view": "page", "kind": page_id}), language))
+        for entry in entries:
+            if entry.get("kind") == "region":
+                routes.append((build_codex_url({"lang": language, "view": "region", "slug": entry.get("slug", "")}), language))
+                continue
+            routes.append(
+                (
+                    build_codex_url(
+                        {
+                            "lang": language,
+                            "view": "entry",
+                            "kind": first_text(entry.get("kind")),
+                            "slug": first_text(entry.get("slug")),
+                        }
+                    ),
+                    language,
+                )
+            )
+
+    unique_routes = unique(route for route, _language in routes)
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for route in unique_routes:
+        lines.extend(
+            [
+                "  <url>",
+                f"    <loc>{xml_escape(route)}</loc>",
+                f"    <lastmod>{xml_escape(generated_at)}</lastmod>",
+                "  </url>",
+            ]
+        )
+    lines.append("</urlset>")
+    return "\n".join(lines) + "\n"
+
+
+def write_sitemap(path: Path, manifest: Dict, entries: List[Dict]) -> None:
+    path.write_text(build_sitemap_xml(manifest, entries), encoding="utf-8")
 
 
 def slugify(value: object) -> str:
@@ -6603,6 +6676,7 @@ def main() -> None:
         CODEX_DATA_DIR / "entries-systems.json",
         CODEX_DATA_DIR / "search-index.json",
     ]
+    sitemap_path = CODEX_ROOT / "sitemap.xml"
 
     write_json(generated_paths[0], manifest)
     write_json(generated_paths[1], region_entries)
@@ -6614,7 +6688,8 @@ def main() -> None:
         waypoint_entries + portal_entries + puzzle_entries + unlock_entries + quest_entries,
     )
     write_json(generated_paths[6], search_index)
-    generated_sizes = verify_cloudflare_asset_sizes(generated_paths)
+    write_sitemap(sitemap_path, manifest, all_entries)
+    generated_sizes = verify_cloudflare_asset_sizes(generated_paths + [sitemap_path])
 
     summary = {
         "manifest": manifest["counts"],
@@ -6625,7 +6700,7 @@ def main() -> None:
                 "sizeBytes": generated_sizes[path.name],
                 "sizeMiB": round(generated_sizes[path.name] / (1024 * 1024), 2),
             }
-            for path in generated_paths
+            for path in generated_paths + [sitemap_path]
         ],
     }
     write_json(CODEX_DATA_DIR / "build-summary.json", summary)
