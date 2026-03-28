@@ -237,6 +237,12 @@
   color: var(--accent-strong);
 }
 
+.tag-pet-difficulty {
+  border-color: color-mix(in srgb, var(--rarity-base, rgba(140, 200, 255, 0.34)) 62%, rgba(180, 208, 247, 0.18));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--rarity-base, rgba(140, 200, 255, 0.34)) 24%, rgba(7, 12, 22, 0.88)), rgba(7, 12, 22, 0.82));
+  color: color-mix(in srgb, var(--rarity-base, rgba(140, 200, 255, 0.34)) 78%, white);
+}
+
 .stat-card,
 .feature-card,
 .search-result,

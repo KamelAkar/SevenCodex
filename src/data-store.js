@@ -12,9 +12,26 @@ const DATA_FILES = [
 
 let cache = null;
 
+function flattenSearchTerms(value) {
+  if (Array.isArray(value)) {
+    return value.flatMap((nested) => flattenSearchTerms(nested));
+  }
+  if (value && typeof value === "object") {
+    return Object.values(value).flatMap((nested) => flattenSearchTerms(nested));
+  }
+  const text = String(value || "").trim();
+  return text ? [text] : [];
+}
+
+function sortableIndex(value) {
+  if (value === null || value === undefined || value === "") return Number.MAX_SAFE_INTEGER;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : Number.MAX_SAFE_INTEGER;
+}
+
 function listSorter(a, b) {
-  const sortA = Number.isFinite(Number(a?.sortIndex)) ? Number(a.sortIndex) : Number.MAX_SAFE_INTEGER;
-  const sortB = Number.isFinite(Number(b?.sortIndex)) ? Number(b.sortIndex) : Number.MAX_SAFE_INTEGER;
+  const sortA = sortableIndex(a?.sortIndex);
+  const sortB = sortableIndex(b?.sortIndex);
   if (sortA !== sortB) return sortA - sortB;
   const rarityA = Number(a?.rarity?.rank) || 0;
   const rarityB = Number(b?.rarity?.rank) || 0;
@@ -84,6 +101,7 @@ export async function loadCodexData() {
   const regionById = new Map();
 
   for (const entry of entries) {
+    const extraSearchTerms = flattenSearchTerms(entry.fields?.searchTerms);
     entry._searchBlob = normalizeText(
       [
         entry.locale?.en?.name,
@@ -93,12 +111,20 @@ export async function loadCodexData() {
         entry.locale?.en?.description,
         entry.locale?.fr?.description,
         ...(entry.regions || []),
+        ...(entry.aliasSlugs || []),
+        ...extraSearchTerms,
         JSON.stringify(entry.sourceIds || {}),
       ].join(" "),
     );
     entry._classNorm = normalizeText(entry.class);
     entryById.set(entry.id, entry);
     entryBySlug.set(`${entry.kind}:${entry.slug}`, entry);
+    for (const aliasSlug of entry.aliasSlugs || []) {
+      const aliasKey = `${entry.kind}:${aliasSlug}`;
+      if (!entryBySlug.has(aliasKey)) {
+        entryBySlug.set(aliasKey, entry);
+      }
+    }
     if (entry.kind === "region") {
       regionBySlug.set(entry.slug, entry);
       for (const regionId of entry.regionIds || []) {
@@ -179,6 +205,7 @@ export function filterEntries(entries, route) {
     if (!query) {
       return true;
     }
+    const extraSearchTerms = flattenSearchTerms(entry.fields?.searchTerms);
     const haystack = entry._searchBlob || normalizeText(
       [
         entry.locale?.en?.name,
@@ -188,6 +215,8 @@ export function filterEntries(entries, route) {
         entry.locale?.en?.description,
         entry.locale?.fr?.description,
         ...(entry.regions || []),
+        ...(entry.aliasSlugs || []),
+        ...extraSearchTerms,
         JSON.stringify(entry.sourceIds || {}),
       ].join(" "),
     );
@@ -227,12 +256,16 @@ export function searchEntries(store, route) {
   const orderedDocs = [];
   for (const score of [100, 85, 70, 40, 1]) {
     const bucket = buckets.get(score) || [];
-    bucket.sort(
-      (a, b) =>
+    bucket.sort((a, b) => {
+      const sortA = sortableIndex(a.sortIndex);
+      const sortB = sortableIndex(b.sortIndex);
+      return (
         Number(b.mapLinked) - Number(a.mapLinked) ||
+        sortA - sortB ||
         Number(b.rarityRank || 0) - Number(a.rarityRank || 0) ||
-        String(a.titleEn || "").localeCompare(String(b.titleEn || "")),
-    );
+        String(a.titleEn || "").localeCompare(String(b.titleEn || ""))
+      );
+    });
     for (const doc of bucket) {
       const entry = store.entryById.get(doc.id);
       if (!entry) continue;

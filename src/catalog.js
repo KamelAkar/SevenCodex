@@ -1,6 +1,6 @@
 export const HUB_ORDER = ["regions", "resources", "heroes", "creatures", "systems"];
 
-export const QUICK_LISTS = ["characters", "weapons", "armor", "engravings", "buffs", "debuffs", "recipes", "bosses", "quests"];
+export const QUICK_LISTS = ["characters", "weapons", "armor", "engravings", "buffs", "debuffs", "recipes", "field-bosses", "quests"];
 
 export const LIST_ORDER = [
   "regions",

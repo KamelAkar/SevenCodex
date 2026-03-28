@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-03-27T05:45:45.327503+00:00",
+  "generatedAt": "2026-03-28T06:46:05.398734+00:00",
   "counts": {
-    "entries": 5401,
+    "entries": 5384,
     "kinds": {
       "region": 13,
-      "node": 116,
+      "node": 115,
       "character": 19,
       "item": 1489,
       "costume": 76,
       "recipe": 1069,
-      "pet": 73,
+      "pet": 65,
       "boss": 29,
       "waypoint": 68,
       "fishing-spot": 22,
-      "monster": 213,
+      "monster": 205,
       "effect": 432,
       "portal": 826,
       "puzzle": 83,
@@ -22,12 +22,12 @@
     },
     "lists": {
       "regions": 13,
-      "gathering": 77,
+      "gathering": 76,
       "mastery": 28,
       "mining": 11,
       "characters": 19,
       "items": 1489,
-      "materials": 109,
+      "materials": 115,
       "equipment": 525,
       "weapons": 218,
       "armor": 129,
@@ -37,17 +37,17 @@
       "production-recipes": 863,
       "engravings": 54,
       "cooking-recipes": 152,
-      "pets": 73,
-      "ground-mounts": 6,
-      "glider-pets": 4,
-      "flying-mounts": 4,
-      "bosses": 29,
+      "pets": 65,
+      "ground-mounts": 21,
+      "glider-pets": 9,
+      "flying-mounts": 10,
       "field-bosses": 19,
+      "bosses": 29,
       "boss-challenges": 5,
       "dungeon-bosses": 5,
       "waypoints": 68,
       "fishing-spots": 22,
-      "monsters": 213,
+      "monsters": 205,
       "buffs": 313,
       "debuffs": 119,
       "portals": 826,
@@ -61,15 +61,15 @@
     },
     "mapLinkedLists": {
       "regions": 13,
-      "gathering": 77,
+      "gathering": 76,
       "mastery": 28,
       "mining": 11,
       "pets": 30,
       "ground-mounts": 6,
       "glider-pets": 4,
       "flying-mounts": 4,
-      "bosses": 18,
       "field-bosses": 18,
+      "bosses": 18,
       "waypoints": 68,
       "fishing-spots": 22,
       "quests": 396,
@@ -144,8 +144,8 @@
         "fr": "Creatures"
       },
       "description": {
-        "en": "Pets, monsters, bosses, and fish-adjacent references.",
-        "fr": "Familiers, monstres, boss et r\u00e9f\u00e9rences li\u00e9es \u00e0 la p\u00eache."
+        "en": "Pets, monsters, field bosses, dungeon bosses, boss challenges, and fish references.",
+        "fr": "Familiers, monstres, boss de terrain, boss de donjon, defis boss et references liees a la peche."
       },
       "lists": [
         "pets",
@@ -153,7 +153,6 @@
         "flying-mounts",
         "glider-pets",
         "monsters",
-        "bosses",
         "field-bosses",
         "dungeon-bosses",
         "boss-challenges",
@@ -211,7 +210,7 @@
         "en": "Crafting ingredients and map-linked material sources.",
         "fr": "Ingr\u00e9dients d'artisanat et sources de mat\u00e9riaux li\u00e9es \u00e0 la carte."
       },
-      "count": 109,
+      "count": 115,
       "mapLinkedCount": 0
     },
     "gathering": {
@@ -225,8 +224,8 @@
         "en": "Open-world gathering node types with direct map actions.",
         "fr": "Types de noeuds de collecte du monde ouvert avec actions carte directes."
       },
-      "count": 77,
-      "mapLinkedCount": 77
+      "count": 76,
+      "mapLinkedCount": 76
     },
     "mining": {
       "hub": "resources",
@@ -435,7 +434,7 @@
         "en": "Capturable creatures and mount-capable companions.",
         "fr": "Cr\u00e9atures capturables et compagnons utilisables comme montures."
       },
-      "count": 73,
+      "count": 65,
       "mapLinkedCount": 30
     },
     "ground-mounts": {
@@ -449,7 +448,7 @@
         "en": "Rideable ground companions and mounts.",
         "fr": "Compagnons montables et montures terrestres."
       },
-      "count": 6,
+      "count": 21,
       "mapLinkedCount": 6
     },
     "flying-mounts": {
@@ -463,7 +462,7 @@
         "en": "Flying mount-capable pets and creatures.",
         "fr": "Familiers et cr\u00e9atures pouvant servir de montures volantes."
       },
-      "count": 4,
+      "count": 10,
       "mapLinkedCount": 4
     },
     "glider-pets": {
@@ -477,7 +476,7 @@
         "en": "Glider-oriented companions and support creatures.",
         "fr": "Compagnons de planeur et cr\u00e9atures de soutien a\u00e9rien."
       },
-      "count": 4,
+      "count": 9,
       "mapLinkedCount": 4
     },
     "monsters": {
@@ -491,12 +490,13 @@
         "en": "Localized monster references extracted from MonsterActorTable.",
         "fr": "R\u00e9f\u00e9rences de monstres localis\u00e9es extraites de MonsterActorTable."
       },
-      "count": 213,
+      "count": 205,
       "mapLinkedCount": 0
     },
     "bosses": {
       "hub": "creatures",
       "kind": "boss",
+      "hidden": true,
       "title": {
         "en": "Bosses",
         "fr": "Boss"
@@ -838,15 +838,15 @@
           "en": {
             "name": "Silent Desert",
             "description": "",
-            "summary": "493 tracked map locations across 13 map systems."
+            "summary": "501 tracked map locations across 13 map systems."
           },
           "fr": {
             "name": "D\u00e9sert silencieux",
             "description": "",
-            "summary": "493 emplacements suivis sur la carte, r\u00e9partis sur 13 syst\u00e8mes."
+            "summary": "501 emplacements suivis sur la carte, r\u00e9partis sur 13 syst\u00e8mes."
           }
         },
-        "pointCount": 493
+        "pointCount": 501
       },
       {
         "id": "region:desert-of-memories",
@@ -972,21 +972,72 @@
     ],
     "pets": [
       {
-        "id": "pet:140100001",
-        "slug": "pet-140100001-shy-moss-ball",
+        "id": "pet:140100025",
+        "slug": "pet-140100025-stubborn-sand-crab",
         "name": {
           "en": {
-            "name": "Shy Moss Ball",
-            "description": "A little spirit from deep in the forest. It gets embarrassed easily, even at the slightest eye contact.",
-            "summary": "Pet reference extracted from game tables."
+            "name": "Stubborn Sand Crab",
+            "description": "A sea creature encountered at the beach. It refuses to listen to anyone, but it's very kind to those who understand it.",
+            "summary": "233 tracked capture locations across 5 regions."
           },
           "fr": {
-            "name": "Boule de mousse timide",
-            "description": "Petit esprit vivant au plus profond de la for\u00eat. Le moindre regard suffit \u00e0 le mettre mal \u00e0 l'aise.",
-            "summary": "R\u00e9f\u00e9rence de familier extraite des tables du jeu."
+            "name": "Crabe des sables t\u00eatu",
+            "description": "Une cr\u00e9ature marine rencontr\u00e9e \u00e0 la plage. Il refuse d'\u00e9couter quiconque, mais sait se montrer aimable envers ceux qui essaient de la comprendre.",
+            "summary": "233 emplacements de capture suivis sur 5 r\u00e9gions."
           }
         },
-        "icon": "./assets/generated/pets/Hud_PET_Summon_mossball_0001.png"
+        "icon": "./assets/generated/pets/Hud_PET_Summon_Crab_Sand_0001.png"
+      },
+      {
+        "id": "pet:140100026",
+        "slug": "pet-140100026-diligent-stone-crab",
+        "name": {
+          "en": {
+            "name": "Diligent Stone Crab",
+            "description": "A sea creature encountered at the beach. Day or night, it's constantly on the move, always searching for food or a new home.",
+            "summary": "221 tracked capture locations across 3 regions."
+          },
+          "fr": {
+            "name": "Crabe des pierres m\u00e9ticuleux",
+            "description": "Une cr\u00e9ature marine rencontr\u00e9e \u00e0 la plage. Nuit et jour, il est constamment en mouvement, toujours \u00e0 la recherche de nourriture ou d'un nouvel abri.",
+            "summary": "221 emplacements de capture suivis sur 3 r\u00e9gions."
+          }
+        },
+        "icon": "./assets/generated/pets/Hud_PET_Summon_Crab_Stone_0001.png"
+      },
+      {
+        "id": "pet:140100006",
+        "slug": "pet-140100006-lazy-spot",
+        "name": {
+          "en": {
+            "name": "Lazy Spot",
+            "description": "A spotted Mutilator Rabbit. It's clearly a Mutilator Rabbit, but Tristan still thinks it's an ordinary rabbit.",
+            "summary": "63 tracked capture locations across 2 regions."
+          },
+          "fr": {
+            "name": "Fain\u00e9ant tachet\u00e9",
+            "description": "Un lapin mutilateur tachet\u00e9 Il s'agit de toute \u00e9vidence d'un lapin mutilateur, ce qui n'emp\u00eache pas Tristan de le prendre pour un simple lapin.",
+            "summary": "63 emplacements de capture suivis sur 2 r\u00e9gions."
+          }
+        },
+        "icon": "./assets/generated/pets/Hud_PET_Summon_Rabbit_0001.png"
+      },
+      {
+        "id": "pet:140100012",
+        "slug": "pet-140100012-noisy-young-screamer",
+        "name": {
+          "en": {
+            "name": "Noisy Young Screamer",
+            "description": "A cute, bouncing plant. It loves to chatter while following Tristan's party.",
+            "summary": "57 tracked capture locations across 2 regions."
+          },
+          "fr": {
+            "name": "Jeune hurleur bruyant",
+            "description": "Une jolie petite plante rebondissante. Elle adore discuter avec Tristan et ses amis.",
+            "summary": "57 emplacements de capture suivis sur 2 r\u00e9gions."
+          }
+        },
+        "icon": "./assets/generated/pets/Hud_PET_Summon_Screamer_0001.png"
       },
       {
         "id": "pet:140100002",
@@ -1006,72 +1057,21 @@
         "icon": "./assets/generated/pets/Hud_PET_Summon_littlegiantbird_0001.png"
       },
       {
-        "id": "pet:140100003",
-        "slug": "pet-140100003-scaredyhog",
+        "id": "pet:140300008",
+        "slug": "pet-140300008-domesticated-seagull",
         "name": {
           "en": {
-            "name": "Scaredyhog",
-            "description": "A hedgehog from the forest. It's so easily startled that even the slightest rustle of a branch makes it flinch and tremble.",
-            "summary": "33 tracked capture locations across 1 regions."
+            "name": "Domesticated Seagull",
+            "description": "A free bird that has grown with the sea. It can travel far without being hindered by waves or sea breezes.",
+            "summary": "48 tracked capture locations across 3 regions."
           },
           "fr": {
-            "name": "Trouillisson",
-            "description": "Un h\u00e9risson de la for\u00eat. Il est si craintif que le moindre fr\u00e9missement d'une branche le fait tressaillir.",
-            "summary": "33 emplacements de capture suivis sur 1 r\u00e9gions."
+            "name": "Mouette domestiqu\u00e9e",
+            "description": "Un animal libre comme les eaux de la mer aupr\u00e8s de laquelle il a grandi. Elle est capable de voyager au loin, nullement g\u00ean\u00e9e par les embruns ou la brise marine.",
+            "summary": "48 emplacements de capture suivis sur 3 r\u00e9gions."
           }
         },
-        "icon": "./assets/generated/pets/Hud_PET_Summon_Forest_Hedghog_0001.png"
-      },
-      {
-        "id": "pet:140100004",
-        "slug": "pet-140100004-gentle-multicolored-moth",
-        "name": {
-          "en": {
-            "name": "Gentle Multicolored Moth",
-            "description": "A green moth from the forest. Its bright colors make it an easy target for predators, leaving it in a state of constant fear.",
-            "summary": "Pet reference extracted from game tables."
-          },
-          "fr": {
-            "name": "Phal\u00e8ne multicolore d\u00e9licat",
-            "description": "Un phal\u00e8ne aussi vert que la for\u00eat dont il vient. Ses couleurs vives en font une cible facile pour ses pr\u00e9dateurs. Il est donc constamment sur ses gardes.",
-            "summary": "R\u00e9f\u00e9rence de familier extraite des tables du jeu."
-          }
-        },
-        "icon": "./assets/generated/pets/Hud_PET_Summon_Forest_Moth_0001.png"
-      },
-      {
-        "id": "pet:140100005",
-        "slug": "pet-140100005-quiet-forest-golem",
-        "name": {
-          "en": {
-            "name": "Quiet Forest Golem",
-            "description": "A rock spirit from deep in the forest. No one has ever heard its voice. Could it be a chatterbox in disguise?",
-            "summary": "Pet reference extracted from game tables."
-          },
-          "fr": {
-            "name": "Golem de la for\u00eat calme",
-            "description": "Esprit des roches vivant au plus profond de la for\u00eat. Personne n'a jamais entendu sa voix. Mais c'est peut-\u00eatre une pipelette qui cache bien son jeu\u2026",
-            "summary": "R\u00e9f\u00e9rence de familier extraite des tables du jeu."
-          }
-        },
-        "icon": "./assets/generated/pets/Hud_PET_Summon_Golem_Stone_0001.png"
-      },
-      {
-        "id": "pet:140100006",
-        "slug": "pet-140100006-lazy-spot",
-        "name": {
-          "en": {
-            "name": "Lazy Spot",
-            "description": "A spotted Mutilator Rabbit. It's clearly a Mutilator Rabbit, but Tristan still thinks it's an ordinary rabbit.",
-            "summary": "Pet reference extracted from game tables."
-          },
-          "fr": {
-            "name": "Fain\u00e9ant tachet\u00e9",
-            "description": "Un lapin mutilateur tachet\u00e9 Il s'agit de toute \u00e9vidence d'un lapin mutilateur, ce qui n'emp\u00eache pas Tristan de le prendre pour un simple lapin.",
-            "summary": "R\u00e9f\u00e9rence de familier extraite des tables du jeu."
-          }
-        },
-        "icon": "./assets/generated/pets/Hud_PET_Summon_Rabbit_0001.png"
+        "icon": "./assets/generated/pets/Hud_PET_Gliding_Gull_0001.png"
       }
     ],
     "systems": [

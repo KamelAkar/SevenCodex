@@ -18,6 +18,8 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
+from urllib.error import HTTPError, URLError
+from urllib.request import urlopen
 
 from resource_resolver import ResourceResolver, repair_mojibake
 
@@ -35,6 +37,10 @@ CODEX_ROOT = ROOT
 CODEX_DATA_DIR = CODEX_ROOT / "data"
 CODEX_ASSETS_DIR = CODEX_ROOT / "assets"
 GENERATED_ASSETS_DIR = CODEX_ASSETS_DIR / "generated"
+BUFF_ICON_REMOTE_BASE = "https://gacha-road-project.vercel.app/images/7dsOrigin/Buff/"
+
+IMAGE_ASSET_SUFFIXES = {".png", ".webp", ".jpg", ".jpeg", ".svg"}
+PACKAGE_ASSET_SUFFIXES = {".uasset"}
 
 MAP_DATA_PATH = SITE_DATA_DIR / "map_data.json"
 MAP_DATA_FULL_PATH = SITE_DATA_DIR / "map_data_full.json"
@@ -106,10 +112,10 @@ HUBS = {
     "creatures": {
         "title": {"en": "Creatures", "fr": "Creatures"},
         "description": {
-            "en": "Pets, monsters, bosses, and fish-adjacent references.",
-            "fr": "Familiers, monstres, boss et r\u00e9f\u00e9rences li\u00e9es \u00e0 la p\u00eache.",
+            "en": "Pets, monsters, field bosses, dungeon bosses, boss challenges, and fish references.",
+            "fr": "Familiers, monstres, boss de terrain, boss de donjon, defis boss et references liees a la peche.",
         },
-        "lists": ["pets", "ground-mounts", "flying-mounts", "glider-pets", "monsters", "bosses", "field-bosses", "dungeon-bosses", "boss-challenges", "fish", "fishing-spots"],
+        "lists": ["pets", "ground-mounts", "flying-mounts", "glider-pets", "monsters", "field-bosses", "dungeon-bosses", "boss-challenges", "fish", "fishing-spots"],
     },
     "systems": {
         "title": {"en": "Systems", "fr": "Syst\u00e8mes"},
@@ -323,6 +329,7 @@ LISTS = {
     "bosses": {
         "hub": "creatures",
         "kind": "boss",
+        "hidden": True,
         "title": {"en": "Bosses", "fr": "Boss"},
         "description": {
             "en": "Unified boss references across field, dungeon, and boss challenge content.",
@@ -532,6 +539,13 @@ PET_CLASS_LISTS = {
     "ground-mount": "ground-mounts",
     "flying-mount": "flying-mounts",
     "glider": "glider-pets",
+}
+
+PET_TYPE_TO_CLASS = {
+    "summon": "basic",
+    "riding": "ground-mount",
+    "gliding": "glider",
+    "flying": "flying-mount",
 }
 
 QUEST_TYPE_META = {
@@ -1480,8 +1494,25 @@ def boss_match_tokens(*values: object) -> List[str]:
     if not text:
         return []
     text = repair_mojibake(text)
+    text = re.sub(r"darkevilf", "darkevil f", text, flags=re.IGNORECASE)
+    text = re.sub(r"darkevilarcher", "darkevil archer", text, flags=re.IGNORECASE)
+    text = re.sub(r"graydemon", "gray demon", text, flags=re.IGNORECASE)
+    text = re.sub(r"reddemon", "red demon", text, flags=re.IGNORECASE)
+    text = re.sub(r"fairycurse", "fairy curse", text, flags=re.IGNORECASE)
+    text = re.sub(r"mossdemon", "moss demon", text, flags=re.IGNORECASE)
+    text = re.sub(r"piratecaptain", "pirate captain", text, flags=re.IGNORECASE)
+    text = re.sub(r"sandthief", "sand thief", text, flags=re.IGNORECASE)
+    text = re.sub(r"screamerwild", "screamer wild", text, flags=re.IGNORECASE)
+    text = re.sub(r"singspirit", "sing spirit", text, flags=re.IGNORECASE)
+    text = re.sub(r"dracowarlord", "draco warlord", text, flags=re.IGNORECASE)
+    text = re.sub(r"dracowarriorm", "draco warrior", text, flags=re.IGNORECASE)
+    text = re.sub(r"dracowarriorf", "draco warrior", text, flags=re.IGNORECASE)
+    text = re.sub(r"orliandemon", "orlian demon", text, flags=re.IGNORECASE)
+    text = re.sub(r"scolpibeast", "scorpy beast", text, flags=re.IGNORECASE)
+    text = re.sub(r"scorpybeast", "scorpy beast", text, flags=re.IGNORECASE)
     text = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", text)
     text = text.replace("RedDemon", "Red Demon")
+    text = text.replace("GrayDemon", "Gray Demon")
     text = text.replace("DarkevilArcher", "Darkevil Archer")
     text = text.replace("FairyCurse", "Fairy Curse")
     text = text.replace("MossDemon", "Moss Demon")
@@ -1489,16 +1520,19 @@ def boss_match_tokens(*values: object) -> List[str]:
     text = text.replace("Sandthief", "Sand Thief")
     text = text.replace("ScreamerWild", "Screamer Wild")
     text = text.replace("Singspirit", "Sing Spirit")
+    text = text.replace("DracoWarlord", "Draco Warlord")
     text = text.replace("DracoWarriorM", "Draco Warrior")
     text = text.replace("DracoWarriorF", "Draco Warrior")
     text = text.replace("OrlianDemon", "Orlian Demon")
-    stop_words = {"world", "boss", "field", "common", "mon", "elite", "of", "the"}
+    stop_words = {"world", "boss", "field", "common", "mon", "elite", "of", "the", "local", "name"}
     tokens = []
     for part in re.split(r"[^A-Za-z0-9]+", text):
         lowered = part.lower()
-        if not lowered or lowered in stop_words or lowered.isdigit() or re.match(r"^c\d+[a-z]*$", lowered):
+        if not lowered or lowered in stop_words or lowered.isdigit() or re.match(r"^ch?\d+[a-z]*$", lowered):
             continue
         tokens.append(lowered)
+        if lowered == "warlord":
+            tokens.append("warrior")
     return unique(tokens)
 
 
@@ -2636,21 +2670,23 @@ class AssetResolver:
                 SITE_ASSETS_DIR / "game-icons",
             ]
         )
-        self.export_index = self._build_index(
-            [
-                FEXPORT_ROOT / "Content" / "UIImg",
-                FEXPORT_ROOT / "Content" / "UI" / "UI_Resourse",
-            ]
-        )
+        export_roots = [
+            FEXPORT_ROOT / "Content" / "UIImg",
+            FEXPORT_ROOT / "Content" / "UI" / "UI_Resourse",
+        ]
+        self.export_index = self._build_index(export_roots, IMAGE_ASSET_SUFFIXES)
+        self.export_package_index = self._build_index(export_roots, PACKAGE_ASSET_SUFFIXES)
         self._copied: Dict[Tuple[str, str], str] = {}
+        self._downloaded: Dict[Tuple[str, str], str] = {}
 
-    def _build_index(self, roots: List[Path]) -> Dict[str, List[Path]]:
+    def _build_index(self, roots: List[Path], suffixes: Iterable[str] = IMAGE_ASSET_SUFFIXES) -> Dict[str, List[Path]]:
         index: Dict[str, List[Path]] = defaultdict(list)
+        normalized_suffixes = {str(suffix).lower() for suffix in suffixes}
         for root in roots:
             if not root.exists():
                 continue
             for path in root.rglob("*"):
-                if path.suffix.lower() not in {".png", ".webp", ".jpg", ".jpeg", ".svg"}:
+                if path.suffix.lower() not in normalized_suffixes:
                     continue
                 for key in unique([path.stem.lower(), normalize_token(path.stem)]):
                     if key:
@@ -2670,6 +2706,47 @@ class AssetResolver:
         rel = "./" + target.relative_to(CODEX_ROOT).as_posix()
         self._copied[key] = rel
         return rel
+
+    def _download(self, url: str, bucket: str, filename: str) -> str:
+        key = (bucket, url)
+        cached = self._downloaded.get(key)
+        if cached:
+            return cached
+        target_dir = GENERATED_ASSETS_DIR / bucket
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / filename
+        if not target.exists():
+            try:
+                with urlopen(url, timeout=20) as response:
+                    if response.getcode() != 200:
+                        return ""
+                    target.write_bytes(response.read())
+            except (HTTPError, URLError, TimeoutError, OSError):
+                return ""
+        rel = "./" + target.relative_to(CODEX_ROOT).as_posix()
+        self._downloaded[key] = rel
+        return rel
+
+    def _remote_effect_icon_url(self, source: Path) -> str:
+        normalized = source.as_posix().lower()
+        if "/content/uiimg/origin/buff/frames/" not in normalized:
+            return ""
+        return f"{BUFF_ICON_REMOTE_BASE}{source.stem}.webp"
+
+    def _resolve_remote_effect_icon(self, exact: str, compact: str, bucket: str) -> str:
+        if bucket != "effects":
+            return ""
+        for key in unique([exact, compact]):
+            if not key:
+                continue
+            for source in self.export_package_index.get(key, []):
+                remote_url = self._remote_effect_icon_url(source)
+                if not remote_url:
+                    continue
+                resolved = self._download(remote_url, bucket, f"{source.stem}.webp")
+                if resolved:
+                    return resolved
+        return ""
 
     def _iterate_stem_candidates(self, candidates: Iterable[object]) -> Iterable[object]:
         for candidate in candidates:
@@ -2740,6 +2817,9 @@ class AssetResolver:
                     return self._copy(source, bucket)
                 for source in self.export_index.get(compact, []):
                     return self._copy(source, bucket)
+            remote = self._resolve_remote_effect_icon(exact, compact, bucket)
+            if remote:
+                return remote
         return ""
 
 
@@ -2831,10 +2911,12 @@ def base_entry(
     stats: Optional[Dict] = None,
     fields: Optional[Dict] = None,
     sort_index: Optional[int] = None,
+    alias_slugs: Optional[List[str]] = None,
 ) -> Dict:
     payload = {
         "id": entry_id,
         "slug": slug,
+        "aliasSlugs": alias_slugs or [],
         "kind": kind,
         "lists": lists,
         "locale": {
@@ -2907,7 +2989,42 @@ def build_region_entries(points: List[Dict], assets: AssetResolver) -> List[Dict
     return entries
 
 
-def build_node_entries(points: List[Dict], assets: AssetResolver) -> List[Dict]:
+def collect_node_search_terms(group_points: List[Dict], raw_subcategory: str) -> List[str]:
+    terms: List[str] = [raw_subcategory, humanize_token(raw_subcategory)]
+    for point in group_points:
+        terms.extend(
+            [
+                point.get("name"),
+                point.get("label"),
+                point.get("subcategory_label"),
+                point.get("resource_name"),
+                point.get("resource_name_fr"),
+                point.get("resolution_source"),
+            ]
+        )
+    return unique(terms)
+
+
+def build_node_alias_slugs(
+    point_type: str,
+    canonical_slug: str,
+    group_points: List[Dict],
+    raw_subcategory: str,
+) -> List[str]:
+    candidates = [f"{point_type}-{slugify(raw_subcategory)}"] if raw_subcategory else []
+    for point in group_points:
+        for value in (
+            point.get("label"),
+            point.get("subcategory_label"),
+            point.get("resource_name"),
+        ):
+            text = first_text(value)
+            if text:
+                candidates.append(f"{point_type}-{slugify(text)}")
+    return [slug for slug in unique(candidates) if slug and slug != canonical_slug]
+
+
+def build_node_entries(points: List[Dict], localizer: Localizer, assets: AssetResolver) -> List[Dict]:
     groups: Dict[Tuple[str, str], List[Dict]] = defaultdict(list)
     for point in points:
         point_type = str(point.get("type") or "")
@@ -2921,23 +3038,29 @@ def build_node_entries(points: List[Dict], assets: AssetResolver) -> List[Dict]:
     entries: List[Dict] = []
     for (point_type, key), group_points in sorted(groups.items(), key=lambda item: (item[0][0], item[0][1])):
         sample = group_points[0]
-        name_en = display_point_name(sample, "en")
-        name_fr = display_point_name(sample, "fr")
         item_id = first_text(sample.get("resource_item_id"), sample.get("resourceItemId"))
-        subcategory = first_text(sample.get("subcategory"), sample.get("subcategory_label"), slugify(name_en))
+        item_row = localizer.item_row(item_id) if item_id else None
+        name_en = first_text(localizer.item_name(item_id, "en") if item_id else "", display_point_name(sample, "en"))
+        name_fr = first_text(localizer.item_name(item_id, "fr") if item_id else "", display_point_name(sample, "fr"), name_en)
+        desc_en = first_text(localizer.item_desc(item_id, "en") if item_id else "", sample.get("resource_description"))
+        desc_fr = first_text(localizer.item_desc(item_id, "fr") if item_id else "", sample.get("resource_description_fr"))
+        raw_subcategory = first_text(sample.get("subcategory"), sample.get("subcategory_label"), slugify(name_en))
+        subcategory_label = first_text(sample.get("subcategory_label"), sample.get("resource_name"), name_en, raw_subcategory)
+        slug = f"{point_type}-{slugify(name_en or key)}"
         icon = ""
-        if subcategory:
+        if raw_subcategory:
             icon = assets.resolve_site_asset(
-                f"site/assets/subcategories/{point_type}/{slugify(subcategory)}.png",
+                f"site/assets/subcategories/{point_type}/{slugify(raw_subcategory)}.png",
                 point_type,
             )
         if not icon:
             icon = assets.resolve_stem(
-                [
+                item_icon_stems(
+                    item_row.get("IconName") if item_row else "",
                     sample.get("resource_icon_name"),
                     sample.get("resourceItemId"),
                     sample.get("resource_item_id"),
-                ],
+                ),
                 point_type,
             )
         regions = unique(region for point in group_points for region in point_regions(point))
@@ -2947,16 +3070,21 @@ def build_node_entries(points: List[Dict], assets: AssetResolver) -> List[Dict]:
             for region_id in (point.get("region_ids") or [point.get("region_id")])
             if region_id
         )
-        rarity = rarity_payload(sample.get("resource_rarity_grade"), first_text(sample.get("resource_rarity_hex")))
+        rarity = rarity_payload(
+            first_text(sample.get("resource_rarity_grade"), item_row.get("Grade") if item_row else ""),
+            first_text(sample.get("resource_rarity_hex")),
+        )
+        search_terms = collect_node_search_terms(group_points, raw_subcategory)
+        alias_slugs = build_node_alias_slugs(point_type, slug, group_points, raw_subcategory)
         entry = base_entry(
             entry_id=f"node:{point_type}:{slugify(key)}",
-            slug=f"{point_type}-{slugify(name_en or key)}",
+            slug=slug,
             kind="node",
             lists=[point_type],
             name_en=name_en or f"{point_type.title()} node",
             name_fr=name_fr or name_en or f"{point_type.title()} node",
-            description_en=first_text(sample.get("resource_description")),
-            description_fr=first_text(sample.get("resource_description_fr")),
+            description_en=desc_en,
+            description_fr=desc_fr,
             summary_en=f"{len(group_points)} tracked locations across {len(regions)} regions.",
             summary_fr=f"{len(group_points)} emplacements suivis sur {len(regions)} r\u00e9gions.",
             icon=icon,
@@ -2964,39 +3092,136 @@ def build_node_entries(points: List[Dict], assets: AssetResolver) -> List[Dict]:
             regions=regions,
             region_ids=region_ids,
             source_tables=["map_data.json"],
-            source_ids={"resourceItemId": item_id, "subcategory": subcategory},
+            source_ids={
+                "resourceItemId": item_id,
+                "subcategory": raw_subcategory,
+                "resolutionSource": first_text(sample.get("resolution_source")),
+                "resolutionConfidence": first_text(sample.get("resolution_confidence")),
+            },
             map_ref=build_map_ref(
                 group_points,
                 point_type=point_type,
-                subcategory=slugify(subcategory),
+                subcategory=slugify(raw_subcategory),
                 resource_item_id=item_id,
             ),
             stats={"pointCount": len(group_points)},
             fields={
-                "subcategory": subcategory,
+                "subcategory": raw_subcategory,
+                "subcategoryLabel": subcategory_label,
                 "resourceItemId": item_id,
                 "type": point_type,
+                "searchTerms": search_terms,
             },
+            alias_slugs=alias_slugs,
         )
         entries.append(entry)
     return entries
 
 
+def pet_lookup_tokens(*values: object) -> List[str]:
+    tokens: List[str] = []
+    for raw in values:
+        text = first_text(raw)
+        if not text:
+            continue
+        cleaned = re.sub(r"^pet\s*:\s*", "", text, flags=re.IGNORECASE).strip()
+        for candidate in [text, cleaned]:
+            normalized = normalize_token(candidate)
+            if normalized:
+                tokens.append(normalized)
+            parts = [
+                part
+                for part in re.split(r"[^a-z0-9]+", candidate.lower())
+                if part and not part.isdigit() and part not in {"pet", "ap", "mon", "nature", "default", "set"}
+            ]
+            tokens.extend(parts)
+            if parts:
+                tokens.append("".join(parts))
+    return unique(tokens)
+
+
+def pet_row_class(row: Optional[Dict]) -> str:
+    if not row:
+        return ""
+    return PET_TYPE_TO_CLASS.get(first_text(row.get("Type")).lower(), "")
+
+
+def build_pet_lookup_index(pet_rows: List[Dict], localizer: Localizer) -> Dict[str, List[Dict]]:
+    index: Dict[str, List[Dict]] = defaultdict(list)
+    for row in pet_rows:
+        if not isinstance(row, dict):
+            continue
+        local_key = first_text(row.get("Local_Key"))
+        actor_tid = first_text(row.get("ActorTid"))
+        for token in pet_lookup_tokens(
+            row.get("ItemID"),
+            local_key,
+            actor_tid,
+            actor_tid.replace("ap_pet_", "") if actor_tid else "",
+            localizer.translate(local_key, "en") if local_key else "",
+            localizer.translate(local_key, "fr") if local_key else "",
+        ):
+            index[token].append(row)
+    return index
+
+
+def resolve_pet_row_from_point(sample: Dict, lookup_index: Dict[str, List[Dict]]) -> Optional[Dict]:
+    point_class = first_text(sample.get("pet_class"))
+    actor_tid = first_text(sample.get("actor_tid"), sample.get("actorTid"))
+    label = first_text(sample.get("pet_name"), sample.get("label"), sample.get("name"))
+    scores: Dict[str, int] = defaultdict(int)
+    candidates_by_item: Dict[str, Dict] = {}
+    for token in pet_lookup_tokens(label, actor_tid, actor_tid.replace("mon_", "") if actor_tid else ""):
+        for row in lookup_index.get(token, []):
+            item_id = first_text(row.get("ItemID"))
+            if not item_id:
+                continue
+            candidates_by_item[item_id] = row
+            scores[item_id] += max(8, len(token))
+            if token in pet_lookup_tokens(label):
+                scores[item_id] += 12
+            if token in pet_lookup_tokens(actor_tid):
+                scores[item_id] += 8
+    if not scores:
+        return None
+    if point_class:
+        for item_id, row in candidates_by_item.items():
+            row_class = pet_row_class(row)
+            if row_class and row_class == point_class:
+                scores[item_id] += 40
+            elif row_class and row_class != point_class:
+                scores[item_id] -= 20
+    best_item_id = max(scores.items(), key=lambda item: (item[1], item[0]))[0]
+    return candidates_by_item.get(best_item_id)
+
+
 def build_pet_entries(points: List[Dict], pet_rows: List[Dict], localizer: Localizer, assets: AssetResolver) -> List[Dict]:
-    point_groups: Dict[str, List[Dict]] = defaultdict(list)
+    raw_point_groups: Dict[str, List[Dict]] = defaultdict(list)
     for point in points:
         if str(point.get("type") or "") != "pet":
             continue
         pet_item_id = first_text(point.get("pet_item_id"), point.get("petItemId"))
         key = pet_item_id or slugify(display_point_name(point, "en"))
-        point_groups[key].append(point)
+        raw_point_groups[key].append(point)
 
     pet_by_item = {first_text(row.get("ItemID")): row for row in pet_rows if first_text(row.get("ItemID"))}
+    pet_lookup_index = build_pet_lookup_index(pet_rows, localizer)
+    point_groups: Dict[str, List[Dict]] = defaultdict(list)
+    for key, group_points in raw_point_groups.items():
+        sample = group_points[0]
+        resolved_item_id = first_text(sample.get("pet_item_id"), sample.get("petItemId"))
+        if not resolved_item_id:
+            resolved_row = resolve_pet_row_from_point(sample, pet_lookup_index)
+            resolved_item_id = first_text(resolved_row.get("ItemID")) if resolved_row else ""
+        point_groups[resolved_item_id or key].extend(group_points)
+
     entries: List[Dict] = []
     for key in sorted(unique(list(point_groups.keys()) + list(pet_by_item.keys()))):
         group_points = point_groups.get(key, [])
         pet_row = pet_by_item.get(key)
         sample = group_points[0] if group_points else pet_row or {}
+        if not pet_row and group_points:
+            pet_row = resolve_pet_row_from_point(sample, pet_lookup_index)
         item_id = first_text(
             sample.get("pet_item_id"),
             sample.get("petItemId"),
@@ -3022,6 +3247,12 @@ def build_pet_entries(points: List[Dict], pet_rows: List[Dict], localizer: Local
         pet_class = first_text(sample.get("pet_class"))
         item_row = localizer.item_row(item_id)
         rarity = rarity_payload(first_text(sample.get("pet_rarity_grade"), item_row.get("Grade") if item_row else ""))
+        difficulty_level = max(
+            int(numeric_value(point.get("pet_catch_difficulty") or point.get("petCatchDifficulty")))
+            for point in group_points
+        ) if group_points else 0
+        rarity_rank = int(numeric_value((rarity or {}).get("rank")) or 0)
+        sort_index = difficulty_level * 100 + rarity_rank if difficulty_level > 0 else 900000 + rarity_rank
         icon = assets.resolve_stem(
             pet_icon_stems(
                 sample.get("pet_icon_name"),
@@ -3040,9 +3271,15 @@ def build_pet_entries(points: List[Dict], pet_rows: List[Dict], localizer: Local
             if region_id
         )
         lists = ["pets"]
+        pet_class = first_text(pet_class, pet_row_class(pet_row))
         pet_list = PET_CLASS_LISTS.get(pet_class)
         if pet_list:
             lists.append(pet_list)
+        legacy_name_en = first_text(display_point_name(sample, "en"))
+        legacy_name_fr = first_text(display_point_name(sample, "fr"))
+        alias_slugs = []
+        if legacy_name_en and slugify(legacy_name_en) != slugify(name_en):
+            alias_slugs.append(f"pet-unknown-{slugify(legacy_name_en)}")
         entry = base_entry(
             entry_id=f"pet:{item_id or slugify(name_en)}",
             slug=f"pet-{item_id or 'unknown'}-{slugify(name_en)}",
@@ -3079,7 +3316,26 @@ def build_pet_entries(points: List[Dict], pet_rows: List[Dict], localizer: Local
                 "openCondition": pet_row.get("Open_Condition") if pet_row else "",
                 "openConditionValue": pet_row.get("Open_Condition_Value") if pet_row else [],
                 "actorTid": pet_row.get("ActorTid") if pet_row else "",
+                "petDifficultyLevel": difficulty_level,
+                "petCatchRateAdd": int(numeric_value(sample.get("pet_catch_rate_add") or sample.get("petCatchRateAdd"))),
+                "petCatchRateAddMaxHpRate": int(
+                    numeric_value(sample.get("pet_catch_rate_add_max_hp_rate") or sample.get("petCatchRateAddMaxHpRate"))
+                ),
+                "petCatchTargetHpRate": int(
+                    numeric_value(sample.get("pet_catch_target_hp_rate") or sample.get("petCatchTargetHpRate"))
+                ),
+                "searchTerms": unique(
+                    [
+                        legacy_name_en,
+                        legacy_name_fr,
+                        first_text(sample.get("label")),
+                        first_text(sample.get("name")),
+                        first_text(sample.get("actor_tid"), sample.get("actorTid")),
+                    ]
+                ),
             },
+            sort_index=sort_index,
+            alias_slugs=unique(alias_slugs),
         )
         entries.append(entry)
     return entries
@@ -3202,6 +3458,19 @@ def build_boss_entries(
         payload["challenge"] = payload["challenge"] or bool(bucket_rows["challenge"])
         payload["source_tables"].update({"MonsterActorTable.json", "DungeonTable.json"})
 
+    for row in monster_rows:
+        if not isinstance(row, dict) or is_technical_creature_row(row, localizer):
+            continue
+        monster_id = first_text(row.get("Name"))
+        if not monster_id:
+            continue
+        group_key = creature_group_key(row, localizer, boss=True) or monster_id.lower()
+        if group_key not in grouped:
+            continue
+        payload = ensure_group(group_key)
+        payload["rows"].append(row)
+        payload["source_tables"].add("MonsterActorTable.json")
+
     entries: List[Dict] = []
     raw_to_entry_id: Dict[str, str] = {}
     for key, payload in sorted(grouped.items(), key=lambda item: item[0]):
@@ -3254,13 +3523,14 @@ def build_boss_entries(
         first_drop_group_ids = unique(first_text(row.get("FirstDropGroupTid")) for row in rows if first_text(row.get("FirstDropGroupTid")))
         catch_drop_group_ids = unique(first_text(row.get("CatchDropGroupTid")) for row in rows if first_text(row.get("CatchDropGroupTid")))
         actor_tid = first_text(creature_root_actor_tid(sample_row), sample_point.get("actor_tid"), sample_point.get("actorTid"))
-        lists = ["bosses"]
+        lists = []
         if payload["field"]:
             lists.append("field-bosses")
         if payload["dungeon"]:
             lists.append("dungeon-bosses")
         if payload["challenge"]:
             lists.append("boss-challenges")
+        lists.append("bosses")
         category_labels_en = []
         category_labels_fr = []
         if payload["field"]:
@@ -3728,6 +3998,79 @@ def build_interaction_acquisition_source(
     }
 
 
+def build_drop_group_acquisition_source(
+    pack_row: Dict,
+    group_rate: int,
+    bucket_meta: Dict,
+    group_row: Dict,
+    monster_rows: List[Dict],
+    localizer: Localizer,
+    assets: AssetResolver,
+) -> Optional[Dict]:
+    drop_group_id = first_text(group_row.get("Name"))
+    if not drop_group_id:
+        return None
+    pack_keys = [first_text(value) for value in (group_row.get("DropPack_Key") or []) if first_text(value)]
+    group_lower = drop_group_id.lower()
+    is_boss = "boss" in group_lower or any("boss" in value.lower() for value in pack_keys)
+    is_elite = "elite" in group_lower or any("elite" in value.lower() for value in pack_keys)
+    if not is_boss and not is_elite:
+        return None
+
+    specific_pack_keys = [
+        value
+        for value in pack_keys
+        if value
+        and not re.match(
+            r"^(?:ch\d+_(?:boss|elite)|mastery_|hawk_feeding_|equip(?:d|_|$)|specialproduct_|item_|reward_)",
+            value,
+            flags=re.IGNORECASE,
+        )
+    ]
+    label_seed = first_text(*specific_pack_keys, drop_group_id)
+    matched_row = match_source_creature_row(label_seed, monster_rows, localizer) or match_source_creature_row(drop_group_id, monster_rows, localizer)
+    if not matched_row:
+        return None
+
+    monster_id = first_text(matched_row.get("Name"))
+    name_en, name_fr = localized_creature_names(matched_row, localizer)
+    name = localized_text(first_text(name_en, prettify_source_seed(label_seed), drop_group_id), first_text(name_fr, name_en, prettify_source_seed(label_seed), drop_group_id))
+    description = localized_text(
+        localizer.translate(matched_row.get("Local_Desc"), "en"),
+        localizer.translate(matched_row.get("Local_Desc"), "fr"),
+    )
+    actor_tid = matched_row.get("ActorTid") if isinstance(matched_row.get("ActorTid"), dict) else {"string_tid": matched_row.get("ActorTid")}
+    icon = assets.resolve_stem(
+        [
+            matched_row.get("UI_HUD_Portrait"),
+            matched_row.get("UI_Actor_Icon_Headup_Center"),
+            monster_icon_stems(actor_tid.get("string_tid") if isinstance(actor_tid, dict) else ""),
+        ],
+        "sources",
+    )
+    rate_meta = drop_rate_metadata(pack_row, group_rate, bucket_meta)
+    return {
+        "id": f"group:{drop_group_id}:{first_text(pack_row.get('Name'))}",
+        "kind": "monster",
+        "name": name,
+        "subtitle": localized_text("Boss reward", "Butin de boss") if is_boss else localized_text("Elite reward", "Butin d'elite"),
+        "description": description,
+        "icon": icon,
+        "image": "",
+        "grade": localized_text(humanize_token(matched_row.get("Grade")), humanize_token(matched_row.get("Grade"))),
+        "qualityMax": int(numeric_value(pack_row.get("Quality_Max")) or 0),
+        "minCount": int(numeric_value(pack_row.get("Min_Cnt")) or 0),
+        "maxCount": int(numeric_value(pack_row.get("Max_Cnt")) or 0),
+        "priority": int(numeric_value(pack_row.get("Priority")) or 0),
+        "standardLevel": first_text(pack_row.get("Standard_Level")),
+        "dropSourceType": "monster-drop",
+        "relatedEntryId": f"monster:{monster_id}" if monster_id else "",
+        "sourceId": drop_group_id,
+        "sourceGroupId": drop_group_id,
+        **rate_meta,
+    }
+
+
 def build_quest_acquisition_source(
     pack_row: Dict,
     quest_id: str,
@@ -4022,6 +4365,7 @@ def build_item_acquisition_sources(
             group_pack_keys = [normalized_lookup_key(value) for value in (group_row.get("DropPack_Key") or [])]
             group_pack_rates = [int(numeric_value(value) or 0) for value in (group_row.get("DropPack_Rate") or [])]
             group_rate = 0
+            group_linked_source = False
             for index, candidate_key in enumerate(group_pack_keys):
                 if candidate_key == pack_key:
                     group_rate = group_pack_rates[index] if index < len(group_pack_rates) else 0
@@ -4035,24 +4379,32 @@ def build_item_acquisition_sources(
                 elif len(dungeon_candidates) > 1:
                     dungeon_candidates = []
             for dungeon_row in dungeon_candidates:
-                append_source(
-                    item_id,
-                    build_dungeon_acquisition_source(
-                        row,
-                        group_rate,
-                        bucket_meta,
-                        dungeon_row,
-                        dungeon_group_by_id,
-                        monster_rows_by_id,
-                        quest_names_by_id,
-                        localizer,
-                        assets,
-                    ),
+                source = build_dungeon_acquisition_source(
+                    row,
+                    group_rate,
+                    bucket_meta,
+                    dungeon_row,
+                    dungeon_group_by_id,
+                    monster_rows_by_id,
+                    quest_names_by_id,
+                    localizer,
+                    assets,
                 )
+                append_source(item_id, source)
+                if source and first_text(source.get("relatedEntryId")):
+                    group_linked_source = True
             for source_field, monster_row in monsters_by_drop_group.get(group_id, []):
-                append_source(item_id, build_monster_acquisition_source(row, group_rate, bucket_meta, monster_row, source_field, localizer, assets))
+                source = build_monster_acquisition_source(row, group_rate, bucket_meta, monster_row, source_field, localizer, assets)
+                append_source(item_id, source)
+                if source and first_text(source.get("relatedEntryId")):
+                    group_linked_source = True
             for interaction_row in interactions_by_drop_group.get(group_id, []):
-                append_source(item_id, build_interaction_acquisition_source(row, group_rate, bucket_meta, interaction_row, monster_rows, localizer, assets))
+                source = build_interaction_acquisition_source(row, group_rate, bucket_meta, interaction_row, monster_rows, localizer, assets)
+                append_source(item_id, source)
+                if source and first_text(source.get("relatedEntryId")):
+                    group_linked_source = True
+            if not group_linked_source:
+                append_source(item_id, build_drop_group_acquisition_source(row, group_rate, bucket_meta, group_row, monster_rows, localizer, assets))
 
     for item_id, recipe_rows in recipes_by_reward_item.items():
         if item_id not in item_id_set:
@@ -5211,7 +5563,13 @@ def build_effect_entries(
         effect_list = "debuffs" if group_key.startswith("debuffs|") else "buffs"
         name_en = first_text(localizer.translate(sample.get("Local_Key"), "en"), humanize_token(sample.get("AbleType", {}).get("string_Tid")), sample.get("Name"))
         name_fr = first_text(localizer.translate(sample.get("Local_Key"), "fr"), name_en)
-        icon = assets.resolve_stem([sample.get("Icon"), "Buff" if effect_list == "buffs" else "Buff2"], "effects")
+        icon = assets.resolve_stem(
+            [
+                [row.get("Icon") for row in rows if first_text(row.get("Icon"))],
+                "Buff" if effect_list == "buffs" else "Buff2",
+            ],
+            "effects",
+        )
         variants = []
         apply_types = []
         actor_states = []
@@ -5780,6 +6138,7 @@ def build_search_index(entries: List[Dict]) -> List[Dict]:
                     entry["kind"],
                     " ".join(entry.get("lists") or []),
                     " ".join(entry.get("regions") or []),
+                    " ".join(entry.get("aliasSlugs") or []),
                     json.dumps(entry.get("sourceIds") or {}, ensure_ascii=True),
                     " ".join(extra_terms),
                 ]
@@ -5801,6 +6160,7 @@ def build_search_index(entries: List[Dict]) -> List[Dict]:
                 "regionIds": entry.get("regionIds") or [],
                 "rarityGrade": entry.get("rarity", {}).get("grade") if entry.get("rarity") else "",
                 "rarityRank": int(numeric_value((entry.get("rarity") or {}).get("rank")) or 0),
+                "sortIndex": entry.get("sortIndex"),
                 "mapLinked": bool(entry.get("mapRef")),
                 "searchText": search_text,
                 "searchTextNorm": normalize_search_text(search_text),
@@ -5810,6 +6170,13 @@ def build_search_index(entries: List[Dict]) -> List[Dict]:
 
 
 def build_manifest(entries: List[Dict], region_entries: List[Dict]) -> Dict:
+    def featured_entry_sort_key(entry: Dict) -> Tuple[int, int, int, str]:
+        sort_index = int(numeric_value(entry.get("sortIndex")) or 999999999)
+        rarity_rank = int(numeric_value((entry.get("rarity") or {}).get("rank")) or 0)
+        point_count = int(numeric_value((entry.get("stats") or {}).get("pointCount")) or 0)
+        name_en = first_text(entry.get("locale", {}).get("en", {}).get("name"))
+        return (sort_index, -point_count, rarity_rank, normalize_search_text(name_en))
+
     list_counts = Counter()
     map_linked_counts = Counter()
     kind_counts = Counter(entry["kind"] for entry in entries)
@@ -5827,7 +6194,10 @@ def build_manifest(entries: List[Dict], region_entries: List[Dict]) -> Dict:
     featured_materials = [
         entry for entry in entries if "materials" in entry.get("lists", [])
     ][:6]
-    featured_pets = [entry for entry in entries if "pets" in entry.get("lists", [])][:6]
+    featured_pets = sorted(
+        [entry for entry in entries if "pets" in entry.get("lists", [])],
+        key=featured_entry_sort_key,
+    )[:6]
     featured_systems = [
         entry
         for entry in entries
@@ -5982,7 +6352,7 @@ def main() -> None:
     )
 
     region_entries = build_region_entries(map_points, assets)
-    node_entries = build_node_entries(map_points, assets)
+    node_entries = build_node_entries(map_points, localizer, assets)
     pet_entries = build_pet_entries(map_points, pet_rows, localizer, assets)
     character_entries = build_character_entries(
         hero_actor_rows,

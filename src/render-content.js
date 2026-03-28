@@ -1,7 +1,7 @@
 import { GUIDE_PAGES, HUB_ORDER, LIST_ICONS, LIST_ORDER, QUICK_LISTS } from "./catalog.js";
 import { entriesForRegion, filterEntries, listEntries, optionsForEntries, relatedEntries, resolveEntry, searchEntries } from "./data-store.js";
 import { t } from "./i18n.js";
-import { buildSevenMapUrl, getSevenMapBaseUrl } from "./map-links.js";
+import { buildMapActions, buildSevenMapUrl, getSevenMapBaseUrl } from "./map-links.js";
 import { buildRouteUrl, routeForEntry, routeForHub, routeForList, routeForPage, routeForSearch } from "./router.js";
 import { state } from "./state.js";
 import { escapeHtml, escapeHtmlWithBreaks, formatCount, formatDateTime, kvRows, titleCase } from "./utils.js";
@@ -18,6 +18,8 @@ import {
   pageId,
   pageMeta,
   pageText,
+  petDifficultyLabel,
+  petDifficultyLevel,
   primaryList,
   regionLabel,
   routeSubtitle,
@@ -41,6 +43,27 @@ function entriesShownLabel(shown, total) {
 
 function copy(en, fr) {
   return state.language === "fr" ? fr : en;
+}
+
+function isVisibleList(store, listId) {
+  const meta = listMeta(store, listId);
+  return Boolean(meta && !meta.hidden);
+}
+
+function isBossCollectionEntry(entry) {
+  return entry?.kind === "boss" || ["bosses", "field-bosses", "dungeon-bosses", "boss-challenges"].some((id) => (entry?.lists || []).includes(id));
+}
+
+const GENERIC_EFFECT_ICON_RE = /\/assets\/generated\/effects\/buff2?\.png(?:\?.*)?$/i;
+
+function isEffectEntry(entry) {
+  const list = primaryList(entry);
+  return entry?.kind === "effect" || list === "buffs" || list === "debuffs";
+}
+
+function effectMediaSource(entry) {
+  if (!isEffectEntry(entry)) return entry?.image || entry?.icon || "";
+  return [entry?.image, entry?.icon].find((src) => src && !GENERIC_EFFECT_ICON_RE.test(src)) || "";
 }
 
 function isRecipeCollectionEntry(entry) {
@@ -78,19 +101,19 @@ function commandDeckCard(store, listId) {
 }
 
 function homeCommandDeck(store) {
-  const order = ["characters", "weapons", "costumes", "buffs", "debuffs", "recipes", "quests", "bosses"];
-  const cards = order.filter((id) => (listMeta(store, id)?.count || 0) > 0).map((id) => commandDeckCard(store, id));
+  const order = ["characters", "weapons", "costumes", "buffs", "debuffs", "recipes", "quests", "field-bosses"];
+  const cards = order.filter((id) => isVisibleList(store, id) && (listMeta(store, id)?.count || 0) > 0).map((id) => commandDeckCard(store, id));
   if (!cards.length) return "";
   return `<section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Codex coverage", "Couverture du codex"))}</p><h3>${escapeHtml(copy("Core game categories", "Categories principales"))}</h3></div><span class="tag">${formatCount(cards.length)} ${escapeHtml(t(state.language, "labels.sections"))}</span></div><div class="command-card-grid">${cards.join("")}</div></section>`;
 }
 
 function activeQuickLists(store) {
-  return QUICK_LISTS.filter((id) => (listMeta(store, id)?.count || 0) > 0);
+  return QUICK_LISTS.filter((id) => isVisibleList(store, id) && (listMeta(store, id)?.count || 0) > 0);
 }
 
 function listsForHub(store, hubId) {
   return Object.entries(store.manifest.lists || {})
-    .filter(([, meta]) => meta.hub === hubId && (meta.count || 0) > 0)
+    .filter(([, meta]) => meta.hub === hubId && !meta.hidden && (meta.count || 0) > 0)
     .map(([id]) => id)
     .sort((a, b) => {
       const indexA = LIST_ORDER.indexOf(a);
@@ -116,7 +139,7 @@ function hubTotals(store, hubId) {
 
 function selectableLists(store) {
   return Object.keys(store.manifest.lists || {})
-    .filter((id) => (listMeta(store, id)?.count || 0) > 0)
+    .filter((id) => isVisibleList(store, id) && (listMeta(store, id)?.count || 0) > 0)
     .sort((a, b) => {
       const indexA = LIST_ORDER.indexOf(a);
       const indexB = LIST_ORDER.indexOf(b);
@@ -128,8 +151,8 @@ function selectableLists(store) {
 }
 
 function homeActionLists(store) {
-  const preferred = ["characters", "weapons", "costumes", "buffs", "debuffs", "quests", "bosses", "recipes"];
-  return preferred.filter((id) => (listMeta(store, id)?.count || 0) > 0).slice(0, 6);
+  const preferred = ["characters", "weapons", "costumes", "buffs", "debuffs", "quests", "field-bosses", "recipes"];
+  return preferred.filter((id) => isVisibleList(store, id) && (listMeta(store, id)?.count || 0) > 0).slice(0, 6);
 }
 
 function hubIconName(hubId) {
@@ -897,6 +920,16 @@ function recipeRewardFocusSection(store, entry) {
   return `<section class="page-section"><article class="panel-inner detail-section-card recipe-focus-card"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(copy("Craft outcome", "Resultat du craft"))}</p><h4>${escapeHtml(copy("What this engraving gives you", "Ce que cette gravure debloque"))}</h4></div><span class="tag">${formatCount(rewardRows.length)}</span></div><div class="recipe-focus-layout"><div class="recipe-focus-copy">${linkedEntry?.icon ? `<span class="detail-media-thumb detail-media-thumb-large recipe-focus-thumb"><img src="${linkedEntry.icon}" alt="" loading="lazy" /></span>` : `<span class="detail-media-thumb detail-media-thumb-large recipe-focus-thumb">${icon("shield")}</span>`}<div class="recipe-focus-text"><strong>${escapeHtml(linkedEntry ? text(linkedEntry, "name") : text(entry, "name"))}</strong>${summary ? `<p class="skill-card-text">${escapeHtmlWithBreaks(summary)}</p>` : ""}${chips ? `<div class="detail-chip-row detail-chip-row-rich">${chips}</div>` : ""}${actions ? `<div class="entry-card-actions">${actions}</div>` : ""}</div></div>${rewardCards ? `<div class="detail-card-grid recipe-outcome-grid">${rewardCards}</div>` : ""}</div></article></section>`;
 }
 
+function recipeRewardEffectSections(store, entry) {
+  if (entry.kind !== "recipe" || entry.fields?.recipeType !== "binding") return "";
+  const rewardRows = entry.fields?.rewards || [];
+  if (!rewardRows.length) return "";
+  const rewardRow = rewardRows.find((row) => row.itemId === entry.fields?.rewardItemId) || rewardRows[0];
+  const linkedEntry = rewardRow?.itemId ? store.entryById.get(`item:${rewardRow.itemId}`) : null;
+  if (!linkedEntry) return "";
+  return `${itemEquipmentEffectsSection(linkedEntry)}${equipmentSetBonusSection(store, linkedEntry)}`;
+}
+
 function showcaseSection(store, items, eyebrow, title) {
   if (!items.length) return "";
   return `<section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(eyebrow)}</p><h3>${escapeHtml(title)}</h3></div><span class="tag">${formatCount(items.length)}</span></div><div class="entry-grid entry-grid-tight">${items.map((item) => entryCard(store, item)).join("")}</div></section>`;
@@ -1092,6 +1125,16 @@ function masteryTrackSection(store, track, anchorId = "") {
 
 function entryHeroStats(entry) {
   const cards = [];
+  const petDifficulty = primaryList(entry) === "pets" ? petDifficultyLabel(entry) : "";
+  if (petDifficulty) {
+    cards.push(
+      stat(
+        copy("Difficulty", "Difficulte"),
+        petDifficulty,
+        copy("Capture priority extracted from the current map data.", "Priorite de capture extraite des donnees carte actuelles."),
+      ),
+    );
+  }
   if (entry.stats?.weaponStyleCount) {
     cards.push(stat(t(state.language, "labels.weaponStyle"), formatCount(entry.stats.weaponStyleCount), t(state.language, "labels.weaponStyle")));
   }
@@ -1247,7 +1290,8 @@ function characterEffectPreviewCard(effect) {
   const href = buildRouteUrl(routeForEntry(state.language, effect));
   const summary = text(effect, "description") || text(effect, "summary") || t(state.language, "labels.noDescription");
   const eyebrow = primaryList(effect) === "debuffs" ? copy("Debuff", "Debuff") : copy("Buff", "Buff");
-  return `<article class="character-effect-card"><a class="character-effect-link" href="${href}" data-nav="true"><span class="detail-media-thumb">${effect.icon ? `<img src="${effect.icon}" alt="" loading="lazy" />` : icon(primaryList(effect) === "debuffs" ? "fang" : "star")}</span><span class="character-effect-copy"><p class="eyebrow">${escapeHtml(eyebrow)}</p><strong>${escapeHtml(text(effect, "name"))}</strong><span>${escapeHtmlWithBreaks(summary)}</span></span></a></article>`;
+  const media = effectMediaSource(effect);
+  return `<article class="character-effect-card"><a class="character-effect-link" href="${href}" data-nav="true"><span class="detail-media-thumb">${media ? `<img src="${media}" alt="" loading="lazy" />` : icon(primaryList(effect) === "debuffs" ? "fang" : "star")}</span><span class="character-effect-copy"><p class="eyebrow">${escapeHtml(eyebrow)}</p><strong>${escapeHtml(text(effect, "name"))}</strong><span>${escapeHtmlWithBreaks(summary)}</span></span></a></article>`;
 }
 
 function characterOverviewSection(store, entry) {
@@ -1481,6 +1525,7 @@ function effectVariantSection(store, entry) {
 function entryContextSections(store, entry) {
   return [
     recipeRewardFocusSection(store, entry),
+    recipeRewardEffectSections(store, entry),
     relationSection(store, entry, "materials", t(state.language, "labels.ingredients")),
     relationSection(store, entry, "rewards", t(state.language, "labels.rewards")),
     itemAcquisitionSection(store, entry),
@@ -1653,7 +1698,7 @@ export function heroMarkup(store, route) {
 }
 
 export function renderHome(store) {
-  return `<section class="page-section"><div class="grid-3">${stat(t(state.language, "labels.entries"), formatCount(store.manifest.counts.entries), t(state.language, "copy.homeEntriesBody"))}${stat(t(state.language, "labels.sections"), formatCount(selectableLists(store).length), t(state.language, "copy.homeSectionsBody"))}${stat(t(state.language, "labels.languages"), "EN / FR", t(state.language, "copy.homeLanguagesBody"))}</div></section>${homeCommandDeck(store)}<section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredHubs"))}</p><h3>${escapeHtml(t(state.language, "home.featuredHubs"))}</h3></div></div><div class="guide-grid">${HUB_ORDER.map((id) => `<article class="guide-card guide-card-strong"><div class="guide-card-head"><span class="card-icon">${icon(hubIconName(id))}</span><div><p class="eyebrow">${escapeHtml(t(state.language, "copy.listHubEyebrow"))}</p><strong>${escapeHtml(hubMeta(store, id)?.title?.[state.language] || id)}</strong></div></div><p>${escapeHtml(hubMeta(store, id)?.description?.[state.language] || "")}</p><div class="card-meta-row"><span class="tag">${formatCount(hubTotals(store, id).count)} ${escapeHtml(t(state.language, "labels.entries"))}</span><span class="tag">${formatCount(listsForHub(store, id).length)} ${escapeHtml(t(state.language, "labels.sections"))}</span></div><div class="entry-card-actions">${button(buildRouteUrl(routeForHub(state.language, id)), t(state.language, "actions.exploreHub"))}</div></article>`).join("")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredLists"))}</p><h3>${escapeHtml(t(state.language, "home.featuredLists"))}</h3></div></div><div class="guide-grid">${activeQuickLists(store).map((id) => listCard(store, id)).join("")}</div></section>${homeListSection(store, "characters", t(state.language, "home.featuredHeroes"))}${homeListSection(store, "weapons", t(state.language, "home.featuredCombat"))}${homeListSection(store, "engravings", t(state.language, "home.featuredCombat"))}${homeListSection(store, "buffs", t(state.language, "home.featuredCombat"))}${homeListSection(store, "bosses", copy("Field bosses", "Boss de terrain"))}${homeListSection(store, "quests", copy("Quest tracking", "Suivi de quetes"))}<section class="page-section"><div class="page-heading"><div><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.coverage"))}</p><h3>${escapeHtml(t(state.language, "home.coverageTitle"))}</h3></div><p class="workspace-subtitle">${escapeHtml(t(state.language, "home.coverageBody"))}</p></div></div><div class="coverage-stack">${renderHubCoverage(store)}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredRegions"))}</p><h3>${escapeHtml(t(state.language, "home.featuredRegions"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "regions")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredMaterials"))}</p><h3>${escapeHtml(t(state.language, "home.featuredMaterials"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "materials")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredPets"))}</p><h3>${escapeHtml(t(state.language, "home.featuredPets"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "pets")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredSystems"))}</p><h3>${escapeHtml(t(state.language, "home.featuredSystems"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "systems")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredGuides"))}</p><h3>${escapeHtml(t(state.language, "home.featuredGuides"))}</h3></div></div><div class="guide-grid">${GUIDE_PAGES.map((id) => guideCard(id)).join("")}</div></section>`;
+  return `<section class="page-section"><div class="grid-3">${stat(t(state.language, "labels.entries"), formatCount(store.manifest.counts.entries), t(state.language, "copy.homeEntriesBody"))}${stat(t(state.language, "labels.sections"), formatCount(selectableLists(store).length), t(state.language, "copy.homeSectionsBody"))}${stat(t(state.language, "labels.languages"), "EN / FR", t(state.language, "copy.homeLanguagesBody"))}</div></section>${homeCommandDeck(store)}<section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredHubs"))}</p><h3>${escapeHtml(t(state.language, "home.featuredHubs"))}</h3></div></div><div class="guide-grid">${HUB_ORDER.map((id) => `<article class="guide-card guide-card-strong"><div class="guide-card-head"><span class="card-icon">${icon(hubIconName(id))}</span><div><p class="eyebrow">${escapeHtml(t(state.language, "copy.listHubEyebrow"))}</p><strong>${escapeHtml(hubMeta(store, id)?.title?.[state.language] || id)}</strong></div></div><p>${escapeHtml(hubMeta(store, id)?.description?.[state.language] || "")}</p><div class="card-meta-row"><span class="tag">${formatCount(hubTotals(store, id).count)} ${escapeHtml(t(state.language, "labels.entries"))}</span><span class="tag">${formatCount(listsForHub(store, id).length)} ${escapeHtml(t(state.language, "labels.sections"))}</span></div><div class="entry-card-actions">${button(buildRouteUrl(routeForHub(state.language, id)), t(state.language, "actions.exploreHub"))}</div></article>`).join("")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredLists"))}</p><h3>${escapeHtml(t(state.language, "home.featuredLists"))}</h3></div></div><div class="guide-grid">${activeQuickLists(store).map((id) => listCard(store, id)).join("")}</div></section>${homeListSection(store, "characters", t(state.language, "home.featuredHeroes"))}${homeListSection(store, "weapons", t(state.language, "home.featuredCombat"))}${homeListSection(store, "engravings", t(state.language, "home.featuredCombat"))}${homeListSection(store, "buffs", t(state.language, "home.featuredCombat"))}${homeListSection(store, "field-bosses", copy("Field bosses", "Boss de terrain"))}${homeListSection(store, "quests", copy("Quest tracking", "Suivi de quetes"))}<section class="page-section"><div class="page-heading"><div><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.coverage"))}</p><h3>${escapeHtml(t(state.language, "home.coverageTitle"))}</h3></div><p class="workspace-subtitle">${escapeHtml(t(state.language, "home.coverageBody"))}</p></div></div><div class="coverage-stack">${renderHubCoverage(store)}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredRegions"))}</p><h3>${escapeHtml(t(state.language, "home.featuredRegions"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "regions")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredMaterials"))}</p><h3>${escapeHtml(t(state.language, "home.featuredMaterials"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "materials")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredPets"))}</p><h3>${escapeHtml(t(state.language, "home.featuredPets"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "pets")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredSystems"))}</p><h3>${escapeHtml(t(state.language, "home.featuredSystems"))}</h3></div></div><div class="entry-grid">${homeFeatured(store, "systems")}</div></section><section class="page-section"><div class="page-heading"><div><p class="eyebrow">${escapeHtml(t(state.language, "home.featuredGuides"))}</p><h3>${escapeHtml(t(state.language, "home.featuredGuides"))}</h3></div></div><div class="guide-grid">${GUIDE_PAGES.map((id) => guideCard(id)).join("")}</div></section>`;
 }
 
 export function renderHub(store, route) {
@@ -1698,8 +1743,129 @@ export function renderRegion(store, region) {
   const gathering = all.filter((entry) => ["gathering", "mining", "mastery"].includes(primaryList(entry)));
   const waypoints = all.filter((entry) => primaryList(entry) === "waypoints");
   const pets = all.filter((entry) => primaryList(entry) === "pets");
-  const bosses = all.filter((entry) => primaryList(entry) === "bosses");
-  return `<section class="page-section"><div class="detail-hero-card detail-hero-card-region"><div class="detail-hero-head"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.region"))}</p><h3>${escapeHtml(text(region, "name"))}</h3><p class="hero-text">${escapeHtml(text(region, "summary"))}</p></div></div><div class="entry-card-actions">${button(buildSevenMapUrl({ language: state.language, region: regionId, regions: region.regionIds || [], focus: "fit", open: "filters" }), t(state.language, "actions.openMap"), true, true)}${button(buildRouteUrl(routeForSearch(state.language, { region: regionId })), t(state.language, "nav.search"))}</div><div class="grid-3 compact-grid">${stat(t(state.language, "labels.pointCount"), formatCount(region.stats?.pointCount || 0), t(state.language, "copy.regionPointsBody"))}${stat(t(state.language, "labels.sections"), formatCount(Object.keys(region.stats?.typeCounts || {}).length), t(state.language, "copy.regionSystemsBody"))}${stat(t(state.language, "labels.entries"), formatCount(all.length), t(state.language, "copy.regionEntriesBody"))}</div></div></section><section class="page-section"><div class="guide-grid">${listCard(store, "gathering", { region: regionId })}${listCard(store, "pets", { region: regionId })}${listCard(store, "bosses", { region: regionId })}${listCard(store, "waypoints", { region: regionId })}</div></section>${regionSection(store, t(state.language, "copy.regionGathering"), gathering, routeForSearch(state.language, { region: regionId, kind: "gathering" }))}${regionSection(store, listMeta(store, "waypoints")?.title?.[state.language] || titleCase("waypoints"), waypoints, routeForList(state.language, "waypoints", { region: regionId }))}${regionSection(store, listMeta(store, "pets")?.title?.[state.language] || titleCase("pets"), pets, routeForList(state.language, "pets", { region: regionId }))}${regionSection(store, listMeta(store, "bosses")?.title?.[state.language] || titleCase("bosses"), bosses, routeForList(state.language, "bosses", { region: regionId }))}`;
+  const bosses = all.filter((entry) => (entry.lists || []).includes("field-bosses"));
+  return `<section class="page-section"><div class="detail-hero-card detail-hero-card-region"><div class="detail-hero-head"><div><p class="eyebrow">${escapeHtml(t(state.language, "labels.region"))}</p><h3>${escapeHtml(text(region, "name"))}</h3><p class="hero-text">${escapeHtml(text(region, "summary"))}</p></div></div><div class="entry-card-actions">${button(buildSevenMapUrl({ language: state.language, region: regionId, regions: region.regionIds || [], focus: "fit", open: "filters" }), t(state.language, "actions.openMap"), true, true)}${button(buildRouteUrl(routeForSearch(state.language, { region: regionId })), t(state.language, "nav.search"))}</div><div class="grid-3 compact-grid">${stat(t(state.language, "labels.pointCount"), formatCount(region.stats?.pointCount || 0), t(state.language, "copy.regionPointsBody"))}${stat(t(state.language, "labels.sections"), formatCount(Object.keys(region.stats?.typeCounts || {}).length), t(state.language, "copy.regionSystemsBody"))}${stat(t(state.language, "labels.entries"), formatCount(all.length), t(state.language, "copy.regionEntriesBody"))}</div></div></section><section class="page-section"><div class="guide-grid">${listCard(store, "gathering", { region: regionId })}${listCard(store, "pets", { region: regionId })}${listCard(store, "field-bosses", { region: regionId })}${listCard(store, "waypoints", { region: regionId })}</div></section>${regionSection(store, t(state.language, "copy.regionGathering"), gathering, routeForSearch(state.language, { region: regionId, kind: "gathering" }))}${regionSection(store, listMeta(store, "waypoints")?.title?.[state.language] || titleCase("waypoints"), waypoints, routeForList(state.language, "waypoints", { region: regionId }))}${regionSection(store, listMeta(store, "pets")?.title?.[state.language] || titleCase("pets"), pets, routeForList(state.language, "pets", { region: regionId }))}${regionSection(store, listMeta(store, "field-bosses")?.title?.[state.language] || titleCase("field-bosses"), bosses, routeForList(state.language, "field-bosses", { region: regionId }))}`;
+}
+
+function addMapToken(set, value) {
+  const text = String(value || "").trim();
+  if (text) set.add(text);
+}
+
+function createMapFilterAccumulator(entry) {
+  return {
+    entrySlug: entry?.slug || "",
+    pointIds: new Set(),
+    regions: new Set(),
+    types: new Set(),
+    subcategories: new Set(),
+    resourceItemIds: new Set(),
+    petItemIds: new Set(),
+    actorTids: new Set(),
+    monCatchTids: new Set(),
+  };
+}
+
+function mergeMapRefIntoAccumulator(accumulator, mapRef) {
+  if (!mapRef) return;
+  addMapToken(accumulator.types, mapRef.type);
+  addMapToken(accumulator.subcategories, mapRef.subcategory);
+  addMapToken(accumulator.resourceItemIds, mapRef.resourceItemId);
+  addMapToken(accumulator.petItemIds, mapRef.petItemId);
+  addMapToken(accumulator.actorTids, mapRef.actorTid);
+  addMapToken(accumulator.monCatchTids, mapRef.monCatchTid);
+  addMapToken(accumulator.pointIds, mapRef.preferredPointId);
+  (mapRef.pointIds || []).forEach((value) => addMapToken(accumulator.pointIds, value));
+  (mapRef.regionIds || mapRef.regions || []).forEach((value) => addMapToken(accumulator.regions, value));
+}
+
+function mergeEntryMapSignals(accumulator, entry) {
+  if (!entry) return;
+  if (entry.mapRef) {
+    mergeMapRefIntoAccumulator(accumulator, entry.mapRef);
+    return;
+  }
+
+  const kind = String(entry.kind || "").trim().toLowerCase();
+  const fields = entry.fields || {};
+  (entry.regions || []).forEach((value) => addMapToken(accumulator.regions, value));
+
+  if (kind === "monster" || kind === "boss") {
+    addMapToken(accumulator.types, kind === "boss" ? "boss" : "monster");
+    addMapToken(accumulator.actorTids, fields.actorTid);
+    addMapToken(accumulator.monCatchTids, fields.monCatchTid);
+    return;
+  }
+
+  if (kind === "pet") {
+    addMapToken(accumulator.types, "pet");
+    addMapToken(accumulator.petItemIds, fields.petItemId);
+  }
+}
+
+function finalizeMapFilterTarget(accumulator) {
+  const target = {
+    language: state.language,
+    entrySlug: accumulator.entrySlug,
+    regions: [...accumulator.regions],
+    types: [...accumulator.types],
+    subcategories: [...accumulator.subcategories],
+    resourceItemIds: [...accumulator.resourceItemIds],
+    petItemIds: [...accumulator.petItemIds],
+    actorTids: [...accumulator.actorTids],
+    monCatchTids: [...accumulator.monCatchTids],
+    focus: "fit",
+    open: "filters",
+  };
+
+  if (accumulator.pointIds.size === 1 && !target.actorTids.length && !target.monCatchTids.length) {
+    target.pointId = [...accumulator.pointIds][0];
+  }
+
+  const hasTargets =
+    !!target.pointId ||
+    target.regions.length > 0 ||
+    target.types.length > 0 ||
+    target.subcategories.length > 0 ||
+    target.resourceItemIds.length > 0 ||
+    target.petItemIds.length > 0 ||
+    target.actorTids.length > 0 ||
+    target.monCatchTids.length > 0;
+
+  return hasTargets ? target : null;
+}
+
+function buildExpandedMapFilterTarget(store, entry) {
+  const accumulator = createMapFilterAccumulator(entry);
+  mergeEntryMapSignals(accumulator, entry);
+
+  if (entry.kind === "item") {
+    for (const row of entry.fields?.acquisitionSources || []) {
+      if (!row.relatedEntryId) continue;
+      mergeEntryMapSignals(accumulator, store.entryById.get(row.relatedEntryId) || null);
+    }
+  }
+
+  return finalizeMapFilterTarget(accumulator);
+}
+
+function standardMapButtons(entry) {
+  if (!entry?.mapRef) return "";
+  return (buildMapActions(entry, state.language) || [])
+    .map((action, index) => button(action.href, action.label, index === 0, true))
+    .join("");
+}
+
+function buildEntryMapButtons(store, entry, related) {
+  if (entry?.mapRef) return standardMapButtons(entry);
+
+  const expandedTarget = buildExpandedMapFilterTarget(store, entry);
+  if (expandedTarget) {
+    return button(buildSevenMapUrl(expandedTarget), t(state.language, "actions.openMap"), true, true);
+  }
+
+  const fallback = related.find((item) => item.mapRef) || null;
+  return fallback?.mapRef ? standardMapButtons(fallback) : "";
 }
 
 export function renderEntry(store, entry) {
@@ -1710,17 +1876,19 @@ export function renderEntry(store, entry) {
   const groupedRelations = relatedCollections(store, entry, allRelated.filter((item) => !costumeIds.has(item.id)));
   const related = allRelated.filter((item) => !costumeIds.has(item.id) && !groupedRelations.consumedIds.has(item.id)).slice(0, 18);
   const displayLists = entry.lists?.includes("recipes") && (entry.lists?.length || 0) > 1 ? entry.lists.filter((id) => id !== "recipes") : entry.lists || [];
-  const mapTarget = entry.mapRef ? entry : related.find((item) => item.mapRef) || null;
-  const heroImage = entry.image || "";
-  const heroIcon = entry.icon || "";
+  const heroImage = isEffectEntry(entry) && GENERIC_EFFECT_ICON_RE.test(entry.image || "") ? "" : entry.image || "";
+  const heroIcon = isEffectEntry(entry) && GENERIC_EFFECT_ICON_RE.test(entry.icon || "") ? "" : entry.icon || "";
   const altName = alternateName(entry);
+  const petDifficulty = primaryList(entry) === "pets" ? petDifficultyLabel(entry) : "";
+  const petDifficultyClass = petDifficulty ? `tag-pet-difficulty pet-difficulty-${petDifficultyLevel(entry)}` : "";
   const heroVisual =
     heroImage || heroIcon
       ? `<div class="detail-hero-media">${heroImage ? `<img src="${heroImage}" alt="" loading="lazy" />` : `<img src="${heroIcon}" alt="" loading="lazy" />`}${heroImage && heroIcon && heroImage !== heroIcon ? `<span class="detail-hero-badge"><img src="${heroIcon}" alt="" loading="lazy" /></span>` : ""}</div>`
-      : `<div class="entry-card-icon entry-card-icon-large">${icon(primaryList(entry) === "pets" ? "paw" : primaryList(entry) === "bosses" ? "crown" : primaryList(entry) === "engravings" ? "star" : isRecipeCollectionEntry(entry) ? "anvil" : primaryList(entry) === "buffs" ? "star" : primaryList(entry) === "debuffs" ? "fang" : primaryList(entry) === "characters" ? "user" : "world")}</div>`;
+      : `<div class="entry-card-icon entry-card-icon-large">${icon(primaryList(entry) === "pets" ? "paw" : isBossCollectionEntry(entry) ? "crown" : primaryList(entry) === "engravings" ? "star" : isRecipeCollectionEntry(entry) ? "anvil" : primaryList(entry) === "buffs" ? "star" : primaryList(entry) === "debuffs" ? "fang" : primaryList(entry) === "characters" ? "user" : "world")}</div>`;
   const referenceRows = {
     [copy("Category", "Categorie")]: displayLists.map((id) => listMeta(store, id)?.title?.[state.language] || titleCase(id)).join(", "),
     [t(state.language, "labels.classification")]: entry.class,
+    [copy("Difficulty", "Difficulte")]: petDifficulty,
     [t(state.language, "labels.rarity")]: entry.rarity?.label?.[state.language],
     [copy("Set", "Set")]: entry.kind === "item" ? (entry.fields?.equipmentSets || []).map((set) => set.name?.[state.language] || set.name?.en || "").filter(Boolean).join(", ") : "",
     [state.language === "fr" ? t(state.language, "labels.englishName") : t(state.language, "labels.frenchName")]: altName,
@@ -1744,41 +1912,9 @@ export function renderEntry(store, entry) {
     [t(state.language, "labels.applyType")]: (entry.fields?.applyTypes || []).map((value) => titleCase(value)).join(", "),
     [t(state.language, "labels.actorState")]: (entry.fields?.actorStates || []).map((value) => titleCase(value)).join(", "),
   };
-  const mapButtons = mapTarget?.mapRef
-    ? button(
-        buildSevenMapUrl({
-          language: state.language,
-          pointId: mapTarget.mapRef.preferredPointId,
-          entrySlug: mapTarget.slug,
-          type: mapTarget.mapRef.type,
-          focus: "point",
-          open: "details",
-        }),
-        t(state.language, "actions.openMap"),
-        true,
-        true,
-      ) +
-      button(
-        buildSevenMapUrl({
-          language: state.language,
-          entrySlug: mapTarget.slug,
-          region: mapTarget.mapRef.regionIds?.[0] || "",
-          regions: mapTarget.mapRef.regionIds || [],
-          type: mapTarget.mapRef.type,
-          subcategory: mapTarget.mapRef.subcategory,
-          resourceItemId: mapTarget.mapRef.resourceItemId,
-          petItemId: mapTarget.mapRef.petItemId,
-          actorTid: mapTarget.mapRef.actorTid,
-          monCatchTid: mapTarget.mapRef.monCatchTid,
-          focus: "fit",
-          open: "filters",
-        }),
-        t(state.language, "actions.showAll"),
-        false,
-        true,
-      )
-    : "";
+  const mapButtons = buildEntryMapButtons(store, entry, related);
   const heroChips = [
+    petDifficulty ? `<span class="tag ${petDifficultyClass}">${escapeHtml(petDifficulty)}</span>` : "",
     `<span class="tag">${escapeHtml(listMeta(store, primaryList(entry))?.title?.[state.language] || entry.kind)}</span>`,
     entry.rarity?.label?.[state.language] ? `<span class="tag">${escapeHtml(entry.rarity.label[state.language])}</span>` : "",
     entry.class ? `<span class="tag">${escapeHtml(entry.class)}</span>` : "",

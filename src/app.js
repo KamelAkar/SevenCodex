@@ -1,5 +1,6 @@
 import { loadCodexData } from "./data-store.js";
 import { DEFAULT_LANGUAGE, getLocale } from "./i18n.js";
+import { getSevenMapBaseUrl } from "./map-links.js";
 import { navigate, parseRoute, routeForSearch } from "./router.js";
 import { loadState, saveState, state } from "./state.js";
 import {
@@ -195,6 +196,14 @@ function handleResponsivePanels() {
   lastMobileViewport = mobile;
 }
 
+function resolveMapLinkUrl(href) {
+  const targetUrl = new URL(String(href || ""), window.location.href);
+  if (String(targetUrl.searchParams.get("view") || "").toLowerCase() !== "map") return null;
+  const mapUrl = new URL(getSevenMapBaseUrl(), window.location.href);
+  mapUrl.search = targetUrl.searchParams.toString();
+  return mapUrl;
+}
+
 function bindEvents() {
   window.addEventListener("popstate", () => {
     syncRouteFromLocation();
@@ -225,6 +234,20 @@ function bindEvents() {
   window.addEventListener("resize", handleResponsivePanels);
 
   document.addEventListener("click", (event) => {
+    const anchor = event.target.closest("a[href]");
+    if (anchor) {
+      const mapUrl = resolveMapLinkUrl(anchor.getAttribute("href"));
+      if (mapUrl) {
+        event.preventDefault();
+        if (anchor.target === "_blank") {
+          window.open(mapUrl.toString(), "_blank", "noopener,noreferrer");
+        } else {
+          window.location.assign(mapUrl.toString());
+        }
+        return;
+      }
+    }
+
     const langButton = event.target.closest("[data-lang]");
     if (langButton) {
       setLanguage(langButton.dataset.lang);

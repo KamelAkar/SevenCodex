@@ -295,6 +295,26 @@
   --rarity-base: var(--rarity-legendary);
 }
 
+.pet-difficulty-1 {
+  --rarity-base: var(--rarity-common);
+}
+
+.pet-difficulty-2 {
+  --rarity-base: var(--rarity-uncommon);
+}
+
+.pet-difficulty-3 {
+  --rarity-base: var(--rarity-rare);
+}
+
+.pet-difficulty-4 {
+  --rarity-base: var(--rarity-epic);
+}
+
+.pet-difficulty-5 {
+  --rarity-base: var(--rarity-legendary);
+}
+
 .entry-card-media img {
   width: 100%;
   height: 100%;

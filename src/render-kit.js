@@ -70,7 +70,34 @@ export const pageId = (route) => route.kind || route.page || "about";
 export const primaryList = (entry) => entry?.lists?.[0] || "";
 export const regionLabel = (store, id) => text(store.regionById?.get(id), "name") || id;
 export const entryListLabel = (store, entry) => listMeta(store, primaryList(entry))?.title?.[state.language] || titleCase(primaryList(entry) || entry.kind);
-const rarityCardClass = (entry) => (entry?.rarity?.grade ? `entry-card-has-rarity rarity-${entry.rarity.grade}` : "");
+
+const PET_DIFFICULTY_LABELS = {
+  1: { en: "Easy", fr: "Facile" },
+  2: { en: "Normal", fr: "Normale" },
+  3: { en: "Advanced", fr: "Avancee" },
+  4: { en: "Hard", fr: "Difficile" },
+  5: { en: "Expert", fr: "Expert" },
+};
+
+const GENERIC_EFFECT_ICON_RE = /\/assets\/generated\/effects\/buff2?\.png(?:\?.*)?$/i;
+
+export function petDifficultyLevel(entry) {
+  const level = Number(entry?.fields?.petDifficultyLevel || 0);
+  return Number.isFinite(level) && level > 0 ? level : 0;
+}
+
+export function petDifficultyLabel(entry) {
+  const level = petDifficultyLevel(entry);
+  if (!level) return "";
+  const labels = PET_DIFFICULTY_LABELS[level] || PET_DIFFICULTY_LABELS[5];
+  return `${labels?.[state.language] || labels?.en || level} (${level}/5)`;
+}
+
+const rarityCardClass = (entry) => {
+  const petDifficulty = primaryList(entry) === "pets" ? petDifficultyLevel(entry) : 0;
+  if (petDifficulty) return `entry-card-has-rarity pet-difficulty-${petDifficulty}`;
+  return entry?.rarity?.grade ? `entry-card-has-rarity rarity-${entry.rarity.grade}` : "";
+};
 
 function secondaryLocaleName(entry) {
   const primary = text(entry, "name");
@@ -80,6 +107,14 @@ function secondaryLocaleName(entry) {
 
 function cardSummary(entry) {
   return text(entry, "description") || text(entry, "summary") || "";
+}
+
+function cardMedia(entry) {
+  const list = primaryList(entry);
+  if (entry?.kind === "effect" || list === "buffs" || list === "debuffs") {
+    return [entry?.image, entry?.icon].find((media) => media && !GENERIC_EFFECT_ICON_RE.test(media)) || "";
+  }
+  return entry?.image || entry?.icon || "";
 }
 
 export function routeTitle(store, route) {
@@ -133,13 +168,15 @@ export function listCard(store, id, extra = {}) {
 export function entryCard(store, entry) {
   if (!entry) return "";
   const mapAction = (buildMapActions(entry, state.language) || [])[0];
-  const media = entry.image || entry.icon;
+  const media = cardMedia(entry);
   const iconName = LIST_ICONS[primaryList(entry)] || HUB_ICONS[primaryList(entry)] || "world";
   const mapLabel = state.language === "fr" ? "Carte" : "Map";
+  const petDifficulty = petDifficultyLabel(entry);
+  const petDifficultyClass = petDifficulty ? `tag-pet-difficulty pet-difficulty-${petDifficultyLevel(entry)}` : "";
   const rarityLabel = entry.rarity?.label?.[state.language] || "";
   const secondaryName = secondaryLocaleName(entry);
   const summary = cardSummary(entry);
-  return `<article class="entry-card ${rarityCardClass(entry)}"><div class="entry-card-head entry-card-head-portrait"><div class="entry-card-media">${media ? `<img src="${media}" alt="" loading="lazy" />` : `<span class="entry-card-icon entry-card-icon-large">${icon(iconName)}</span>`}</div><div class="entry-card-copy"><span class="entry-card-kicker">${escapeHtml(entryListLabel(store, entry))}</span><strong>${escapeHtml(text(entry, "name"))}</strong>${secondaryName ? `<span class="entry-dual-name">${escapeHtml(`${state.language === "fr" ? "EN" : "FR"}: ${secondaryName}`)}</span>` : ""}</div>${summary ? `<p class="entry-card-text">${escapeHtml(summary)}</p>` : ""}</div><div class="entry-card-meta">${rarityLabel ? `<span class="tag tag-rarity">${escapeHtml(rarityLabel)}</span>` : ""}${joinChips((entry.regions || []).slice(0, 2))}${entry.mapRef ? `<span class="tag tag-accent">${escapeHtml(t(state.language, "labels.mapLinked"))}</span>` : ""}</div><div class="entry-card-actions">${button(buildRouteUrl(routeForEntry(state.language, entry)), t(state.language, "actions.open"))}${mapAction ? button(mapAction.href, mapLabel, false, true) : ""}</div></article>`;
+  return `<article class="entry-card ${rarityCardClass(entry)}"><div class="entry-card-head entry-card-head-portrait"><div class="entry-card-media">${media ? `<img src="${media}" alt="" loading="lazy" />` : `<span class="entry-card-icon entry-card-icon-large">${icon(iconName)}</span>`}</div><div class="entry-card-copy"><span class="entry-card-kicker">${escapeHtml(entryListLabel(store, entry))}</span><strong>${escapeHtml(text(entry, "name"))}</strong>${secondaryName ? `<span class="entry-dual-name">${escapeHtml(`${state.language === "fr" ? "EN" : "FR"}: ${secondaryName}`)}</span>` : ""}</div>${summary ? `<p class="entry-card-text">${escapeHtml(summary)}</p>` : ""}</div><div class="entry-card-meta">${petDifficulty ? `<span class="tag ${petDifficultyClass}">${escapeHtml(petDifficulty)}</span>` : ""}${rarityLabel ? `<span class="tag tag-rarity">${escapeHtml(rarityLabel)}</span>` : ""}${joinChips((entry.regions || []).slice(0, 2))}${entry.mapRef ? `<span class="tag tag-accent">${escapeHtml(t(state.language, "labels.mapLinked"))}</span>` : ""}</div><div class="entry-card-actions">${button(buildRouteUrl(routeForEntry(state.language, entry)), t(state.language, "actions.open"))}${mapAction ? button(mapAction.href, mapLabel, false, true) : ""}</div></article>`;
 }
 
 export function renderSidebarNav(store) {
@@ -212,7 +249,7 @@ export function renderGuideLinks() {
 export function renderSuggestions(store, query) {
   const results = searchEntries(store, { q: query, limit: 8 });
   return results.length
-    ? `<div class="search-suggestions-head"><strong>${escapeHtml(t(state.language, "search.suggestions"))}</strong><a href="${buildRouteUrl(routeForSearch(state.language, { q: query }))}" data-nav="true">${escapeHtml(t(state.language, "filters.searchResults"))}</a></div><div class="search-suggestion-list">${results.map((entry, index) => `<a id="searchSuggestion-${index}" class="search-suggestion ${state.suggestionIndex === index ? "is-active" : ""}" href="${buildRouteUrl(routeForEntry(state.language, entry))}" data-nav="true" data-suggestion-index="${index}" role="option" aria-selected="${state.suggestionIndex === index ? "true" : "false"}"><span class="search-suggestion-icon">${entry.image || entry.icon ? `<img src="${entry.image || entry.icon}" alt="" loading="lazy" />` : icon(LIST_ICONS[primaryList(entry)] || "world")}</span><span class="search-suggestion-copy"><strong>${escapeHtml(text(entry, "name"))}</strong><span>${escapeHtml(entryListLabel(store, entry))}</span></span></a>`).join("")}</div>`
+    ? `<div class="search-suggestions-head"><strong>${escapeHtml(t(state.language, "search.suggestions"))}</strong><a href="${buildRouteUrl(routeForSearch(state.language, { q: query }))}" data-nav="true">${escapeHtml(t(state.language, "filters.searchResults"))}</a></div><div class="search-suggestion-list">${results.map((entry, index) => { const media = cardMedia(entry); return `<a id="searchSuggestion-${index}" class="search-suggestion ${state.suggestionIndex === index ? "is-active" : ""}" href="${buildRouteUrl(routeForEntry(state.language, entry))}" data-nav="true" data-suggestion-index="${index}" role="option" aria-selected="${state.suggestionIndex === index ? "true" : "false"}"><span class="search-suggestion-icon">${media ? `<img src="${media}" alt="" loading="lazy" />` : icon(LIST_ICONS[primaryList(entry)] || "world")}</span><span class="search-suggestion-copy"><strong>${escapeHtml(text(entry, "name"))}</strong><span>${escapeHtml(entryListLabel(store, entry))}</span></span></a>`; }).join("")}</div>`
     : empty(t(state.language, "filters.noSuggestions"));
 }
 
