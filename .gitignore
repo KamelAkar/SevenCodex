@@ -2,6 +2,7 @@
 output/
 node_modules/
 __pycache__/
+dist/
 *.pyc
 *.pyo
 Thumbs.db
