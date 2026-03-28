@@ -16,6 +16,7 @@ const PUBLIC_ENTRIES = [
   "src",
   "styles",
 ];
+const ROOT_GLOB_PATTERNS = [/^google[a-z0-9]+\.html$/i, /^BingSiteAuth\.xml$/i];
 
 function removeIfExists(targetPath) {
   if (fs.existsSync(targetPath)) {
@@ -46,10 +47,17 @@ function formatMiB(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`;
 }
 
+function rootDynamicEntries() {
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && ROOT_GLOB_PATTERNS.some((pattern) => pattern.test(entry.name)))
+    .map((entry) => entry.name);
+}
+
 function main() {
   removeIfExists(outputDir);
   ensureDir(outputDir);
-  PUBLIC_ENTRIES.forEach(copyEntry);
+  [...PUBLIC_ENTRIES, ...rootDynamicEntries()].forEach(copyEntry);
 
   const resourcePath = path.join(outputDir, "data", "entries-resources.json");
   const resourceBytes = fs.statSync(resourcePath).size;
